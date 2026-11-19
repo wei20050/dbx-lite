@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useUpdateBlocker } from "@/lib/app/updatePreparation";
 import { computed, ref, shallowRef, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, watch } from "vue";
 import type { CalendarDateTime } from "@internationalized/date";
 import { useI18n } from "vue-i18n";
@@ -3097,7 +3096,6 @@ onBeforeUnmount(() => {
 });
 
 defineExpose({ focusSearch });
-useUpdateBlocker(() => (hasUnsavedRedisDraft.value || editingTtl.value || savingTtl.value || savingString.value || savingJson.value || savingMember.value || savingZsetMember.value || savingHashFieldTtl.value || showRenameKeyDialog.value ? t("updates.preparationDrafts") : undefined));
 </script>
 
 <template>

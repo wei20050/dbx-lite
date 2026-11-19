@@ -9,7 +9,6 @@ import type { MongoDumpFormat, MongoDumpSourceInput, MongoDumpCatalog, MongoRest
 import type { MongoRestoreUpload, MongoSourceReadOptions } from "./mongodbDumpTypes";
 import type { DamengDumpKind, DamengDumpRequest, DamengDumpProgress } from "./damengDumpTypes";
 import type { UserSkillRootSettings, UserSkillsListResult, UserSkillsReadResult } from "@/types/userSkills";
-import type { McpAccessPolicy, McpAccessRule, McpSubScopeMode, McpToolCatalog, PluginMcpGrant, PluginMcpView } from "@/types/mcpCatalog";
 import type { DatabaseBackupCommand, DatabaseBackupBackgroundStatus } from "@/lib/backup/backgroundDatabaseBackup";
 import type { NativeJobContext, NativeJobDetails, NativeJobList, NativeJobListRequest, NativeJobRequest, NativeJobOperationStatus, NativeJobPreparedPlan, NativeJobRef, NativeJobReferenceCatalog, NativeJobReferenceListRequest } from "@/lib/database/nativeJobs";
 import { functionDiffsToWire, functionInfoFromWire, schemaDiffPreparationFromWire, schemaDiffPreparationToWire, type FunctionInfoWire, type SchemaDiffPreparationWire } from "./functionInfoTransport";
@@ -409,45 +408,9 @@ export interface DesktopSettings {
   sidebar_table_page_size?: number | null;
 }
 
-export interface McpGlobalPolicy {
-  readOnly: boolean;
-  allowDangerousSql: boolean;
-  promptHighRiskSql: boolean;
-  callConfirmation?: "off" | "full" | "high_risk" | null;
-  allowedConnectionIds: string[] | null;
-  allowedGroupIds: string[];
-  allowedToolNames: string[] | null;
-  connectionPolicies: McpConnectionPolicy[];
-  groupPolicies: McpGroupPolicy[];
-  configured: boolean;
-  queryTimeoutSecs: number | null;
-  pluginToolsMode: "auto" | "flat" | "lazy";
-}
 
-export interface McpGroupPolicy {
-  groupId: string;
-  readOnly: boolean;
-  allowDangerousSql: boolean;
-}
 
-export interface McpConnectionPolicy {
-  connectionId: string;
-  readOnly: boolean;
-  allowDangerousSql: boolean;
-  executionModeConfigured: boolean;
-  executionModePolicyVersion: number | null;
-  databaseScope: "all" | "selected" | "none";
-  allowedDatabases: string[];
-  databasePolicies: McpDatabasePolicy[];
-  /** Opt-in for AI-agent DML against a Salesforce org; forced off by `readOnly`. */
-  allowSalesforceDml: boolean;
-}
 
-export interface McpDatabasePolicy {
-  databaseName: string;
-  readOnly: boolean;
-  allowDangerousSql: boolean;
-}
 
 export interface SavedSqlSyncEntry {
   folderName?: string;
@@ -972,113 +935,30 @@ export async function saveDesktopSettings(settings: DesktopSettings): Promise<vo
   return invoke("save_desktop_settings", { settings });
 }
 
-export async function loadMcpGlobalPolicy(): Promise<McpGlobalPolicy> {
-  return invoke("load_mcp_global_policy");
-}
 
-export async function saveMcpGlobalPolicy(policy: Omit<McpGlobalPolicy, "configured">): Promise<void> {
-  return invoke("save_mcp_global_policy", { policy });
-}
 
-export async function loadMcpToolCatalog(): Promise<McpToolCatalog> {
-  return invoke("load_mcp_tool_catalog");
-}
 
-export async function loadMcpAccessPolicy(): Promise<McpAccessPolicy> {
-  return invoke("load_mcp_access_policy");
-}
 
-export async function resetInvalidMcpAccessPolicy(): Promise<void> {
-  return invoke("reset_invalid_mcp_access_policy");
-}
 
-export async function setMcpPluginScopeRule(connectionId: string, kind: string, value: string | null, rule: McpAccessRule | null, subScope: McpSubScopeMode | null): Promise<McpAccessPolicy> {
-  return invoke("set_mcp_plugin_scope_rule", { connectionId, kind, value, rule, subScope });
-}
 
-export async function listPluginMcpViews(): Promise<PluginMcpView[]> {
-  return invoke("list_plugin_mcp_views");
-}
 
-export async function loadPluginMcpView(pluginId: string): Promise<PluginMcpView> {
-  return invoke("load_plugin_mcp_view", { pluginId });
-}
 
-export async function listMcpPluginScopes(pluginId: string, connectionId: string): Promise<{ values: string[] }> {
-  return invoke("list_mcp_plugin_scopes", { pluginId, connectionId });
-}
 
-export async function savePluginMcpGrant(pluginId: string, grant: PluginMcpGrant, approveCurrent: boolean): Promise<PluginMcpView> {
-  return invoke("save_plugin_mcp_grant", { pluginId, grant, approveCurrent });
-}
 
-export interface McpHttpServerSettings {
-  enabled: boolean;
-  host: string;
-  port: number;
-  path: string;
-  allowRemote: boolean;
-  allowedHosts: string[];
-  allowedOrigins: string[];
-}
 
-export interface McpHttpServerStatus {
-  enabled: boolean;
-  running: boolean;
-  endpoint: string | null;
-  accessToken: string | null;
-  lastError: string | null;
-  recentLogs: string[];
-}
 
-export interface WebMcpHttpStatus {
-  enabled: boolean;
-  endpointPath: string;
-  tokenSource: "environment" | "file" | "managed" | null;
-  allowedHosts: string[];
-  allowedOrigins: string[];
-  deploymentManaged: boolean;
-  managementAvailable: boolean;
-  accessToken: string | null;
-}
 
-export interface WebMcpHttpSettings {
-  enabled: boolean;
-  allowedHosts: string[];
-  allowedOrigins: string[];
-}
 
 export interface WebCapabilities {
   passwordViewerEnabled: boolean;
 }
 
-export async function loadMcpHttpServerSettings(): Promise<McpHttpServerSettings> {
-  return invoke("load_mcp_http_server_settings");
-}
 
-export async function saveMcpHttpServerSettings(settings: McpHttpServerSettings): Promise<McpHttpServerStatus> {
-  return invoke("save_mcp_http_server_settings", { settings });
-}
 
-export async function mcpHttpServerStatus(): Promise<McpHttpServerStatus> {
-  return invoke("mcp_http_server_status");
-}
 
-export async function rotateMcpHttpServerToken(): Promise<McpHttpServerStatus> {
-  return invoke("rotate_mcp_http_server_token");
-}
 
-export async function loadWebMcpHttpStatus(): Promise<WebMcpHttpStatus> {
-  return { enabled: false, endpointPath: "/mcp", tokenSource: null, allowedHosts: [], allowedOrigins: [], deploymentManaged: false, managementAvailable: false, accessToken: null };
-}
 
-export async function saveWebMcpHttpSettings(_settings: WebMcpHttpSettings): Promise<WebMcpHttpStatus> {
-  throw new Error("Web MCP settings are available only in DBX Web");
-}
 
-export async function rotateWebMcpToken(): Promise<WebMcpHttpStatus> {
-  throw new Error("Web MCP settings are available only in DBX Web");
-}
 
 export async function loadWebCapabilities(): Promise<WebCapabilities> {
   return { passwordViewerEnabled: true };
@@ -1108,13 +988,7 @@ export async function saveHistoryRetentionLimit(limit: number): Promise<void> {
   return invoke("save_history_retention_limit", { limit });
 }
 
-export async function loadMcpHistoryRetentionLimit(): Promise<number> {
-  return invoke("load_mcp_history_retention_limit");
-}
 
-export async function saveMcpHistoryRetentionLimit(limit: number): Promise<void> {
-  return invoke("save_mcp_history_retention_limit", { limit });
-}
 
 export async function loadMaxRetries(): Promise<number> {
   return invoke("load_max_retries");
@@ -3718,55 +3592,14 @@ export interface UpdateDownloadProgress {
   total: number | null;
 }
 
-export interface McpServerStatus {
-  installed: boolean;
-  installation_source: "native" | "homebrew" | "npm" | null;
-  npm_available: boolean;
-  npm_installed: boolean;
-  node_path: string | null;
-  node_version: string | null;
-  current_version: string | null;
-  latest_version: string | null;
-  update_available: boolean;
-  bin_path: string | null;
-  native_bin_path: string | null;
-  script_path: string | null;
-  data_dir: string | null;
-  install_command: string;
-  update_command: string;
-  uninstall_command: string;
-  error: string | null;
-}
 
-export async function checkMcpServerStatus(): Promise<McpServerStatus> {
-  return invoke("check_mcp_server_status");
-}
 
-export type McpKeychainAccess = "authorized" | "needs_authorization" | "key_missing" | "unknown" | "not_applicable";
 
-export async function checkMcpKeychainAccess(): Promise<McpKeychainAccess> {
-  return invoke("check_mcp_keychain_access");
-}
 
-export async function authorizeMcpKeychain(): Promise<string> {
-  return invoke("authorize_mcp_keychain");
-}
 
-export async function installMcpServer(): Promise<string> {
-  return invoke("install_mcp_server");
-}
 
-export async function installNativeMcpServer(): Promise<string> {
-  return invoke("install_native_mcp_server");
-}
 
-export async function uninstallMcpServer(): Promise<string> {
-  return invoke("uninstall_mcp_server");
-}
 
-export async function uninstallNpmMcpServer(): Promise<string> {
-  return invoke("uninstall_npm_mcp_server");
-}
 
 export async function checkForUpdates(locale?: string, source?: UpdateDownloadSource, channel: UpdateChannel = "stable"): Promise<UpdateInfo> {
   return invoke("check_for_updates", { locale, source, channel });
@@ -6043,9 +5876,6 @@ export async function clearHistoryBySource(source: string): Promise<void> {
   return invoke("clear_history_by_source", { source });
 }
 
-export async function cleanupMcpHistoryRetention(): Promise<number> {
-  return invoke("cleanup_mcp_history_retention");
-}
 
 export async function clearRedisHistory(): Promise<void> {
   const entries = await loadRedisHistory(1000, 0);

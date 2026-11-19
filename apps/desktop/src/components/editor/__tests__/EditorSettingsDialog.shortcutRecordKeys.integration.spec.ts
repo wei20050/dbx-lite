@@ -60,11 +60,6 @@ vi.mock("@/components/ui/button", async () => {
   };
 });
 
-// ChangelogPanel fires a network fetch on mount (About tab); irrelevant here.
-vi.mock("@/components/settings/ChangelogPanel.vue", async () => {
-  const { defineComponent } = await import("vue");
-  return { default: defineComponent({ setup: () => () => null }) };
-});
 
 // Back the store composable with a stub so the dialog boots without the Tauri backend,
 // but read `shortcuts` through the hoisted object so each test can seed the

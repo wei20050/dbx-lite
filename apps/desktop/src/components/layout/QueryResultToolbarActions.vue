@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { computed, onScopeDispose, ref } from "vue";
-import { Archive, GitBranch, Gauge, Loader2, PlugZap } from "@lucide/vue";
+import { Archive, GitBranch, Gauge, Loader2 } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 import { Button } from "@/components/ui/button";
 import LightTooltip from "@/components/ui/LightTooltip.vue";
-import * as api from "@/lib/backend/api";
-import { createFrontendPluginRegistry, type PluginContributionEntry } from "@/lib/plugins/frontendPlugin";
-import type { InstalledPlugin, PluginResultViewContribution } from "@/types/database";
 
 type OutputView = "result" | "graph" | "summary" | "explain" | "chart" | "messages" | "profile";
 
@@ -27,30 +23,9 @@ const emit = defineEmits<{
   selectExplain: [];
   selectProfile: [];
   exportArchive: [];
-  openResultView: [pluginId: string, contributionId: string, label: string];
 }>();
 
-const { t, locale: appLocale } = useI18n();
-
-const installedPlugins = ref<InstalledPlugin[]>([]);
-const resultViews = computed<PluginContributionEntry<PluginResultViewContribution>[]>(() => createFrontendPluginRegistry(installedPlugins.value, appLocale.value).listResultViews());
-const visibleResultViews = computed(() => (props.hasResult ? resultViews.value.slice(0, 4) : []));
-
-async function refreshInstalledPlugins() {
-  try {
-    const plugins = await api.listPlugins();
-    installedPlugins.value = plugins.filter((plugin) => plugin.compatibility.compatible);
-  } catch {
-    // Keep the previous list: an empty registry would drop live plugin result-view entries.
-  }
-}
-
-// Plugin install/update/uninstall from the Plugin Center broadcasts this event;
-// without it the toolbar keeps the mount-time snapshot until DBX restarts.
-const onPluginsChanged = () => void refreshInstalledPlugins();
-window.addEventListener("dbx:plugins-changed", onPluginsChanged);
-onScopeDispose(() => window.removeEventListener("dbx:plugins-changed", onPluginsChanged));
-void refreshInstalledPlugins();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -104,20 +79,6 @@ void refreshInstalledPlugins();
         <Loader2 v-if="archiveExporting" class="block h-3.5 w-3.5 self-center animate-spin" />
         <Archive v-else class="block h-3.5 w-3.5 self-center" />
         <span v-if="!compact" class="inline-flex h-4 items-center leading-none">{{ t("tabs.exportResultArchive") }}</span>
-      </Button>
-    </LightTooltip>
-    <LightTooltip v-for="view in visibleResultViews" :key="view.plugin.manifest.id + ':' + view.contribution.id" :text="t('pluginPlatform.openResultView', { label: view.contribution.label })" :disabled="!compact" side="bottom" :delay="0" :close-delay="0" nowrap>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-5 shrink-0 text-xs leading-none text-muted-foreground hover:text-foreground"
-        :class="compact ? 'w-6 gap-0 px-0' : 'gap-1 px-2'"
-        :title="t('pluginPlatform.openResultView', { label: view.contribution.label })"
-        :aria-label="t('pluginPlatform.openResultView', { label: view.contribution.label })"
-        @click="emit('openResultView', view.plugin.manifest.id, view.contribution.id, view.contribution.label)"
-      >
-        <PlugZap class="block h-3.5 w-3.5 self-center" />
-        <span v-if="!compact" class="inline-flex h-4 items-center leading-none">{{ view.contribution.label }}</span>
       </Button>
     </LightTooltip>
   </div>

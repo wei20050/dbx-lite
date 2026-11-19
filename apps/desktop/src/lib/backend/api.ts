@@ -433,24 +433,12 @@ export const saveAiProviderConfig = forward("saveAiProviderConfig");
 export const loadAiProviderConfigs = forward("loadAiProviderConfigs");
 export const loadDesktopSettings = forward("loadDesktopSettings");
 export const saveDesktopSettings = forward("saveDesktopSettings");
-export const loadMcpGlobalPolicy = forward("loadMcpGlobalPolicy");
-export const saveMcpGlobalPolicy = forward("saveMcpGlobalPolicy");
-export const loadMcpToolCatalog = forward("loadMcpToolCatalog");
-export const listPluginMcpViews = forward("listPluginMcpViews");
-export const loadMcpAccessPolicy = forward("loadMcpAccessPolicy");
-export const resetInvalidMcpAccessPolicy = forward("resetInvalidMcpAccessPolicy");
-export const setMcpPluginScopeRule = forward("setMcpPluginScopeRule");
-export const loadPluginMcpView = forward("loadPluginMcpView");
-export const listMcpPluginScopes = forward("listMcpPluginScopes");
-export const savePluginMcpGrant = forward("savePluginMcpGrant");
 export const loadMaxAgentTurns = forward("loadMaxAgentTurns");
 export const loadSqlFileUploadMaxBytes = forward("loadSqlFileUploadMaxBytes");
 export const saveSqlFileUploadMaxMb = forward("saveSqlFileUploadMaxMb");
 export const saveMaxAgentTurns = forward("saveMaxAgentTurns");
 export const loadHistoryRetentionLimit = forward("loadHistoryRetentionLimit");
 export const saveHistoryRetentionLimit = forward("saveHistoryRetentionLimit");
-export const loadMcpHistoryRetentionLimit = forward("loadMcpHistoryRetentionLimit");
-export const saveMcpHistoryRetentionLimit = forward("saveMcpHistoryRetentionLimit");
 export const loadMaxRetries = forward("loadMaxRetries");
 export const saveMaxRetries = forward("saveMaxRetries");
 export const completeAppClose = forward("completeAppClose");
@@ -1023,25 +1011,10 @@ export const loadTaskRunItems = forward("loadTaskRunItems");
 export const loadRedisHistory = forward("loadRedisHistory");
 export const clearHistory = forward("clearHistory");
 export const clearHistoryBySource = forward("clearHistoryBySource");
-export const cleanupMcpHistoryRetention = forward("cleanupMcpHistoryRetention");
 export const clearRedisHistory = forward("clearRedisHistory");
 export const deleteHistoryEntry = forward("deleteHistoryEntry");
 
 // Updates
-export const checkMcpServerStatus = forward("checkMcpServerStatus");
-export const checkMcpKeychainAccess = forward("checkMcpKeychainAccess");
-export const authorizeMcpKeychain = forward("authorizeMcpKeychain");
-export const installMcpServer = forward("installMcpServer");
-export const installNativeMcpServer = forward("installNativeMcpServer");
-export const uninstallMcpServer = forward("uninstallMcpServer");
-export const uninstallNpmMcpServer = forward("uninstallNpmMcpServer");
-export const loadMcpHttpServerSettings = forward("loadMcpHttpServerSettings");
-export const saveMcpHttpServerSettings = forward("saveMcpHttpServerSettings");
-export const mcpHttpServerStatus = forward("mcpHttpServerStatus");
-export const rotateMcpHttpServerToken = forward("rotateMcpHttpServerToken");
-export const loadWebMcpHttpStatus = forward("loadWebMcpHttpStatus");
-export const saveWebMcpHttpSettings = forward("saveWebMcpHttpSettings");
-export const rotateWebMcpToken = forward("rotateWebMcpToken");
 export const loadWebCapabilities = forward("loadWebCapabilities");
 export const checkForUpdates = forward("checkForUpdates");
 export const fetchChangelog = forward("fetchChangelog");
@@ -1122,11 +1095,6 @@ export type {
   SnippetDownloadResult,
   SnippetTokenStatus,
   SnippetPassphraseStatus,
-  McpServerStatus,
-  McpHttpServerSettings,
-  McpHttpServerStatus,
-  WebMcpHttpStatus,
-  WebMcpHttpSettings,
   WebCapabilities,
   UpdateInfo,
   DownloadedUpdate,
@@ -1266,7 +1234,6 @@ export type {
   GlobalSearchRequest,
   GlobalSearchMatch,
   GlobalSearchSettings,
-  McpKeychainAccess,
 } from "@/lib/backend/tauri";
 
 // MQTT

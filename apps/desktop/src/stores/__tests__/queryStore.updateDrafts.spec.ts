@@ -10,7 +10,7 @@ vi.mock("@/lib/backend/api", async (importOriginal) => ({
   },
   listDetachedTabHandoffs: async () => [],
 }));
-describe("update draft recovery", () => {
+describe("draft recovery", () => {
   beforeEach(() => {
     vi.resetModules();
     mocks.saved = null;
@@ -18,11 +18,10 @@ describe("update draft recovery", () => {
     vi.stubGlobal("localStorage", { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value), removeItem: (key: string) => storage.delete(key) });
     setActivePinia(createPinia());
   });
-  it.each(["", "SELECT 2;"])("preserves a saved SQL draft %j through recovery and file hydration", async (sql) => {
+  it.each(["", "SELECT 2;"])("preserves a saved SQL draft %j through restore and file hydration", async (sql) => {
     const { useQueryStore } = await import("@/stores/queryStore");
     const { useSettingsStore } = await import("@/stores/settingsStore");
     const { useSavedSqlStore } = await import("@/stores/savedSqlStore");
-    const { UPDATE_RESTORE_KEY } = await import("@/lib/app/updatePreparation");
     const store = useQueryStore();
     const id = store.createTab("conn", "db");
     Object.assign(
@@ -30,9 +29,8 @@ describe("update draft recovery", () => {
       { savedSqlId: "saved", sql, originalSql: "SELECT 1;" },
     );
     await store.flushPendingPersist();
-    localStorage.setItem(UPDATE_RESTORE_KEY, "1");
     setActivePinia(createPinia());
-    useSettingsStore().updateEditorSettings({ openTabsRestoreMode: "none", confirmUnsavedSqlClose: false });
+    useSettingsStore().updateEditorSettings({ openTabsRestoreMode: "all", confirmUnsavedSqlClose: false });
     const ensureFileContent = vi.spyOn(useSavedSqlStore(), "ensureFileContent");
     const restored = useQueryStore();
     await restored.initOpenTabs({ validConnectionIds: ["conn"] });
@@ -42,7 +40,6 @@ describe("update draft recovery", () => {
     expect(tab.originalSql).toBe("SELECT 1;");
     expect(restored.isTabDirty(tab)).toBe(true);
     expect(ensureFileContent).not.toHaveBeenCalled();
-    expect(localStorage.getItem(UPDATE_RESTORE_KEY)).toBeNull();
     expect(restored.openSavedSql(savedFile)).toBe(id);
     expect(tab.sql).toBe(sql);
     expect(tab.originalSql).toBe("SELECT 1;");
@@ -52,12 +49,12 @@ describe("update draft recovery", () => {
 
   it("loads file content when reopening a clean restored SQL library tab", async () => {
     const { useQueryStore } = await import("@/stores/queryStore");
-    const { UPDATE_RESTORE_KEY } = await import("@/lib/app/updatePreparation");
+    const { useSettingsStore } = await import("@/stores/settingsStore");
     const store = useQueryStore();
     const id = store.openSavedSql(savedFile);
     await store.flushPendingPersist();
-    localStorage.setItem(UPDATE_RESTORE_KEY, "1");
     setActivePinia(createPinia());
+    useSettingsStore().updateEditorSettings({ openTabsRestoreMode: "all" });
     const restored = useQueryStore();
     await restored.initOpenTabs({ validConnectionIds: ["conn"] });
     const tab = restored.tabs.find((tab) => tab.id === id)!;
@@ -69,31 +66,19 @@ describe("update draft recovery", () => {
     expect(restored.isTabDirty(tab)).toBe(false);
   });
 
-  it("recovers SQL and structure drafts once even when normal restore and close protection are disabled", async () => {
+  it("does not restore drafts when open-tab restore is disabled", async () => {
     const { useQueryStore } = await import("@/stores/queryStore");
     const { useSettingsStore } = await import("@/stores/settingsStore");
-    const { UPDATE_RESTORE_KEY } = await import("@/lib/app/updatePreparation");
     const settings = useSettingsStore();
     settings.updateEditorSettings({ openTabsRestoreMode: "none", confirmUnsavedSqlClose: false });
     const store = useQueryStore();
     const sqlId = store.createTab("conn", "db");
     store.updateSql(sqlId, "select unsaved;");
-    const structureId = store.openTableStructure("conn", "db", undefined, "users");
-    const draft = { dirty: true, initialized: true, ddlDraft: "alter table users add column name text" };
-    store.tabs.find((tab) => tab.id === structureId)!.structureDraft = draft as any;
     await store.flushPendingPersist();
-    localStorage.setItem(UPDATE_RESTORE_KEY, "1");
     setActivePinia(createPinia());
     useSettingsStore().updateEditorSettings({ openTabsRestoreMode: "none", confirmUnsavedSqlClose: false });
     const restored = useQueryStore();
     await restored.initOpenTabs({ validConnectionIds: ["conn"] });
-    expect(restored.tabs.find((tab) => tab.id === sqlId)?.sql).toBe("select unsaved;");
-    expect(restored.tabs.find((tab) => tab.id === structureId)?.structureDraft).toEqual(draft);
-    expect(localStorage.getItem(UPDATE_RESTORE_KEY)).toBeNull();
-    setActivePinia(createPinia());
-    useSettingsStore().updateEditorSettings({ openTabsRestoreMode: "none" });
-    const subsequent = useQueryStore();
-    await subsequent.initOpenTabs({ validConnectionIds: ["conn"] });
-    expect(subsequent.tabs).toEqual([]);
+    expect(restored.tabs).toEqual([]);
   });
 });

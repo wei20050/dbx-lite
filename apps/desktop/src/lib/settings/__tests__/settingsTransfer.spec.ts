@@ -175,11 +175,11 @@ describe("settingsTransfer", () => {
   });
 
   it("rejects out-of-domain enum values", () => {
-    const result = parseSettingsTransferFile(fileWith({ updateDownloadSource: "evil" }));
+    const result = parseSettingsTransferFile(fileWith({ welcomePageMode: "evil" }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe("invalid-fields");
-    expect(result.error.detail).toContain("updateDownloadSource");
+    expect(result.error.detail).toContain("welcomePageMode");
   });
 
   it("round-trips table completion schema qualification as an editor setting", () => {
@@ -277,7 +277,7 @@ describe("settingsTransfer", () => {
   });
 
   it("keeps legacy toolbar objects partial during import", () => {
-    const fieldsAddedByToolbarCustomization = new Set(["newConnection", "newQuery", "openSql", "databaseBackups", "mcpSettings", "exportProgress", "settings", "logout"]);
+    const fieldsAddedByToolbarCustomization = new Set(["newConnection", "newQuery", "openSql", "databaseBackups", "exportProgress", "settings", "logout"]);
     const legacyToolbarItems = Object.fromEntries(Object.entries(DEFAULT_EDITOR_SETTINGS.toolbarItems).filter(([key]) => !fieldsAddedByToolbarCustomization.has(key)));
     const result = parseSettingsTransferFile(fileWith({ toolbarItems: legacyToolbarItems }));
     expect(result.ok).toBe(true);

@@ -5,7 +5,6 @@ import type { MongoDumpFormat, MongoDumpSourceInput, MongoDumpCatalog, MongoRest
 import type { MongoRestoreUpload, MongoSourceReadOptions } from "./mongodbDumpTypes";
 import type { DamengDumpKind, DamengDumpRequest, DamengDumpProgress } from "./damengDumpTypes";
 import type { UserSkillRootSettings, UserSkillsListResult, UserSkillsReadResult } from "@/types/userSkills";
-import type { McpAccessPolicy, McpAccessRule, McpSubScopeMode, McpToolCatalog, PluginMcpGrant, PluginMcpView } from "@/types/mcpCatalog";
 import type { DatabaseBackupCommand, DatabaseBackupBackgroundStatus } from "@/lib/backup/backgroundDatabaseBackup";
 import type { NativeJobContext, NativeJobDetails, NativeJobList, NativeJobListRequest, NativeJobRequest, NativeJobOperationStatus, NativeJobPreparedPlan, NativeJobRef, NativeJobReferenceCatalog, NativeJobReferenceListRequest } from "@/lib/database/nativeJobs";
 import type { PlDebugBootstrap, PlDebugSessionRef, PlDebugStartIntent, PlDebugOperationRequest, PlDebugReadRequest, PlDebugReceipt, PlDebugSnapshot } from "@/lib/debug/plDebugProtocol";
@@ -152,124 +151,7 @@ import type { SidebarObjectKind } from "@/lib/database/databaseObjectCapabilitie
 import type { AiConfig, AiTestConnectionResult } from "@/stores/settingsStore";
 import type { AiChatSelectionState, AiEffortCapability } from "@/types/ai";
 import type { SalesforceCurrentUser, SalesforceOAuthAuthorizeParams, SalesforceOAuthDevicePollResult, SalesforceOAuthDeviceStartResult, SalesforceOAuthRefreshResult, SalesforceOAuthToken } from "@/types/salesforce";
-import type {
-  AgentDriverInfo,
-  AiCompletionRequest,
-  AiStreamChunk,
-  AiConversation,
-  AiRun,
-  AiModelInfo,
-  DriverStoreUsage,
-  DriverRuntimeSummary,
-  UpgradeAllAgentDriversResult,
-  AgentOfflineImportResult,
-  AgentUpdateBlocker,
-  AgentOfflineExportPreview,
-  AgentOfflineExportResult,
-  DesktopSettings,
-  McpGlobalPolicy,
-  SavedSqlSyncRequest,
-  DriverInstallProgress,
-  JavaRuntimeConfig,
-  UpdateInfo,
-  DownloadedUpdate,
-  UpdateDownloadSource,
-  UpdateChannel,
-  RedisCollectionPage,
-  RedisBlob,
-  RedisDatabaseInfo,
-  RedisStreamConsumer,
-  RedisStreamGroup,
-  RedisStreamPage,
-  RedisStreamPendingPage,
-  RedisValue,
-  RedisKeysExpiryResult,
-  RedisScanResult,
-  RedisKeyMetadata,
-  RedisCommandResult,
-  RedisSlowlogEntry,
-  RedisNodeEndpoint,
-  KvInt64,
-  KvValue,
-  KvListPrefixResponse,
-  KvListPrefixOptions,
-  KvGetResponse,
-  KvGetOptions,
-  KvPutOptions,
-  KvPutResponse,
-  KvDeleteOptions,
-  KvDeleteResponse,
-  KvHistoryResponse,
-  KvStatusResponse,
-  EtcdDefragResponse,
-  EtcdWatchStartRequest,
-  EtcdWatchStartResponse,
-  EtcdWatchPollResponse,
-  EtcdLeaseListResponse,
-  DocumentQueryResult,
-  DynamoDbTableDescription,
-  MongoDocumentResult,
-  MongoCollectionStatsResult,
-  MongoCloneCollectionResult,
-  MongoDropIndexesResult,
-  MongoIndexSpec,
-  MongoGridFsBucketInfo,
-  HistoryEntry,
-  HistorySearchRequest,
-  HistorySearchResult,
-  HistoryConnectionOption,
-  TaskRunDetail,
-  TaskRunItemsPage,
-  TaskRunItemsQuery,
-  TaskRunListQuery,
-  TaskRunPage,
-  SqlFileRequest,
-  SqlFilePreview,
-  SqlFileTable,
-  SqlFileProgress,
-  TransferRequest,
-  TransferProgress,
-  TransferOwnershipPreview,
-  TableImportPreviewRequest,
-  TableImportPreview,
-  TableImportRequest,
-  TableImportSummary,
-  TableImportProgress,
-  MongoImportPreviewRequest,
-  MongoImportPreview,
-  MongoImportRequest,
-  MongoImportProgress,
-  MongoImportSummary,
-  MongoExportRequest,
-  MongoExportProgress,
-  MongoExportSummary,
-  DatabaseBackupSnapshot,
-  DatabaseExportRequest,
-  ExportProgress,
-  TableExportRequest,
-  TableExportProgress,
-  QueryResultExportRequest,
-  TableCsvExportOptions,
-  XlsxCellValue,
-  QueryPaginationExecutionPlanOptions,
-  QueryPaginationExecutionPlan,
-  SortedQuerySqlOptions,
-  QuerySqlBuildResult,
-  BuildExplainSqlOptions,
-  ExplainSqlBuildResult,
-  PluginPlanCapabilities,
-  PluginPlanRequest,
-  PluginPlanResult,
-  DroppedFilePreviewSqlOptions,
-  MongoGridFsFileInfo,
-  AppSupportInfo,
-  PromptTemplate,
-  SshPromptResolution,
-  MeilisearchIndexOverview,
-  MeilisearchIndexSettings,
-  ElasticsearchIndexMetadataKind,
-  ElasticsearchDeleteByQueryResult,
-} from "@/lib/backend/tauri";
+import type { AgentDriverInfo, AiCompletionRequest, AiStreamChunk, AiConversation, AiRun, AiModelInfo, DriverStoreUsage, DriverRuntimeSummary, UpgradeAllAgentDriversResult, AgentOfflineImportResult, AgentUpdateBlocker, AgentOfflineExportPreview, AgentOfflineExportResult, DesktopSettings, SavedSqlSyncRequest, DriverInstallProgress, JavaRuntimeConfig, UpdateInfo, DownloadedUpdate, UpdateDownloadSource, UpdateChannel, RedisCollectionPage, RedisBlob, RedisDatabaseInfo, RedisStreamConsumer, RedisStreamGroup, RedisStreamPage, RedisStreamPendingPage, RedisValue, RedisKeysExpiryResult, RedisScanResult, RedisKeyMetadata, RedisCommandResult, RedisSlowlogEntry, RedisNodeEndpoint, KvInt64, KvValue, KvListPrefixResponse, KvListPrefixOptions, KvGetResponse, KvGetOptions, KvPutOptions, KvPutResponse, KvDeleteOptions, KvDeleteResponse, KvHistoryResponse, KvStatusResponse, EtcdDefragResponse, EtcdWatchStartRequest, EtcdWatchStartResponse, EtcdWatchPollResponse, EtcdLeaseListResponse, DocumentQueryResult, DynamoDbTableDescription, MongoDocumentResult, MongoCollectionStatsResult, MongoCloneCollectionResult, MongoDropIndexesResult, MongoIndexSpec, MongoGridFsBucketInfo, HistoryEntry, HistorySearchRequest, HistorySearchResult, HistoryConnectionOption, TaskRunDetail, TaskRunItemsPage, TaskRunItemsQuery, TaskRunListQuery, TaskRunPage, SqlFileRequest, SqlFilePreview, SqlFileTable, SqlFileProgress, TransferRequest, TransferProgress, TransferOwnershipPreview, TableImportPreviewRequest, TableImportPreview, TableImportRequest, TableImportSummary, TableImportProgress, MongoImportPreviewRequest, MongoImportPreview, MongoImportRequest, MongoImportProgress, MongoImportSummary, MongoExportRequest, MongoExportProgress, MongoExportSummary, DatabaseBackupSnapshot, DatabaseExportRequest, ExportProgress, TableExportRequest, TableExportProgress, QueryResultExportRequest, TableCsvExportOptions, XlsxCellValue, QueryPaginationExecutionPlanOptions, QueryPaginationExecutionPlan, SortedQuerySqlOptions, QuerySqlBuildResult, BuildExplainSqlOptions, ExplainSqlBuildResult, PluginPlanCapabilities, PluginPlanRequest, PluginPlanResult, DroppedFilePreviewSqlOptions, MongoGridFsFileInfo, AppSupportInfo, PromptTemplate, SshPromptResolution, MeilisearchIndexOverview, MeilisearchIndexSettings, ElasticsearchIndexMetadataKind, ElasticsearchDeleteByQueryResult } from "@/lib/backend/tauri";
 import type { QueryEditability } from "@/lib/sql/sqlAnalysis";
 import type { PluginTableMetadata, PluginTableMetadataRequest } from "@/types/pluginSchemaMetadata";
 import type { PluginDataGrant, PluginDataQueryRequest, PluginDataQueryResult } from "@/types/pluginData";
@@ -2624,98 +2506,22 @@ export async function saveDesktopSettings(settings: DesktopSettings): Promise<vo
   safeLocalStorageSet(DESKTOP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...DEFAULT_DESKTOP_SETTINGS, ...settings }));
 }
 
-export async function loadMcpGlobalPolicy(): Promise<McpGlobalPolicy> {
-  return get("/api/app-settings/mcp-policy");
-}
 
-export async function loadMcpToolCatalog(): Promise<McpToolCatalog> {
-  return get("/api/app-settings/mcp-tool-catalog");
-}
 
-export async function loadMcpAccessPolicy(): Promise<McpAccessPolicy> {
-  return get("/api/app-settings/mcp-access-policy");
-}
 
-export async function resetInvalidMcpAccessPolicy(): Promise<void> {
-  return post("/api/app-settings/mcp-access-policy/recover", {});
-}
 
-export async function setMcpPluginScopeRule(connectionId: string, kind: string, value: string | null, rule: McpAccessRule | null, subScope: McpSubScopeMode | null): Promise<McpAccessPolicy> {
-  const res = await fetch(apiUrl("/api/app-settings/mcp-access-policy/plugin-scope"), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ connectionId, kind, value, rule, subScope }),
-  });
-  if (!res.ok) throw await backendResponseError(res);
-  return res.json();
-}
 
-export async function listPluginMcpViews(): Promise<PluginMcpView[]> {
-  return get("/api/app-settings/plugin-mcp");
-}
 
-export async function loadPluginMcpView(pluginId: string): Promise<PluginMcpView> {
-  return post("/api/app-settings/plugin-mcp/view", { pluginId });
-}
 
-export async function listMcpPluginScopes(pluginId: string, connectionId: string): Promise<{ values: string[] }> {
-  return post("/api/app-settings/plugin-mcp/scopes", { pluginId, connectionId });
-}
 
-export async function savePluginMcpGrant(pluginId: string, grant: PluginMcpGrant, approveCurrent: boolean): Promise<PluginMcpView> {
-  const res = await fetch(apiUrl("/api/app-settings/plugin-mcp/grant"), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pluginId, grant, approveCurrent }),
-  });
-  if (!res.ok) throw await backendResponseError(res);
-  return res.json();
-}
 
-export async function saveMcpGlobalPolicy(policy: Omit<McpGlobalPolicy, "configured">): Promise<void> {
-  const res = await fetch(apiUrl("/api/app-settings/mcp-policy"), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(policy),
-  });
-  if (!res.ok) throw await backendResponseError(res);
-}
 
-export async function loadMcpHttpServerSettings(): Promise<import("@/lib/backend/tauri").McpHttpServerSettings> {
-  return { enabled: false, host: "127.0.0.1", port: 5225, path: "/mcp", allowRemote: false, allowedHosts: [], allowedOrigins: [] };
-}
 
-export async function saveMcpHttpServerSettings(_settings: import("@/lib/backend/tauri").McpHttpServerSettings): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
-  throw new Error("The MCP HTTP server is available only in DBX Desktop");
-}
 
-export async function mcpHttpServerStatus(): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
-  return { enabled: false, running: false, endpoint: null, accessToken: null, lastError: null, recentLogs: [] };
-}
 
-export async function rotateMcpHttpServerToken(): Promise<import("@/lib/backend/tauri").McpHttpServerStatus> {
-  throw new Error("The MCP HTTP server is available only in DBX Desktop");
-}
 
-export async function loadWebMcpHttpStatus(): Promise<import("@/lib/backend/tauri").WebMcpHttpStatus> {
-  return get("/api/app-settings/mcp-http-status");
-}
 
-export async function saveWebMcpHttpSettings(settings: import("@/lib/backend/tauri").WebMcpHttpSettings): Promise<import("@/lib/backend/tauri").WebMcpHttpStatus> {
-  const res = await fetch(apiUrl("/api/app-settings/mcp-http"), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-DBX-MCP-Settings": "1" },
-    body: JSON.stringify(settings),
-  });
-  if (!res.ok) throw await backendResponseError(res);
-  return res.json();
-}
 
-export async function rotateWebMcpToken(): Promise<import("@/lib/backend/tauri").WebMcpHttpStatus> {
-  const res = await fetch(apiUrl("/api/app-settings/mcp-http/rotate-token"), { method: "POST", headers: { "X-DBX-MCP-Settings": "1" } });
-  if (!res.ok) throw await backendResponseError(res);
-  return res.json();
-}
 
 export async function loadWebCapabilities(): Promise<import("@/lib/backend/tauri").WebCapabilities> {
   return get("/api/app-settings/web-capabilities");
@@ -2760,18 +2566,7 @@ export async function saveHistoryRetentionLimit(limit: number): Promise<void> {
   if (!res.ok) throw await backendResponseError(res);
 }
 
-export async function loadMcpHistoryRetentionLimit(): Promise<number> {
-  return get("/api/app-settings/mcp-history-retention-limit");
-}
 
-export async function saveMcpHistoryRetentionLimit(limit: number): Promise<void> {
-  const res = await fetch(apiUrl("/api/app-settings/mcp-history-retention-limit"), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ limit }),
-  });
-  if (!res.ok) throw await backendResponseError(res);
-}
 
 export async function loadMaxRetries(): Promise<number> {
   return get("/api/app-settings/max-retries");
@@ -5894,9 +5689,6 @@ export async function clearHistoryBySource(source: string): Promise<void> {
   return del(`/api/history?source=${encodeURIComponent(source)}`);
 }
 
-export async function cleanupMcpHistoryRetention(): Promise<number> {
-  return post("/api/app-settings/mcp-history-retention-cleanup", {});
-}
 
 export async function clearRedisHistory(): Promise<void> {
   const entries = await loadRedisHistory(1000, 0);
@@ -5935,51 +5727,12 @@ export async function fetchChangelogRelease(lang: string | undefined, tag: strin
   return get(`/api/changelog/releases/${encodeURIComponent(tag)}${query}`);
 }
 
-export async function checkMcpServerStatus(): Promise<import("@/lib/backend/tauri").McpServerStatus> {
-  return {
-    installed: false,
-    installation_source: null,
-    npm_available: false,
-    npm_installed: false,
-    node_path: null,
-    node_version: null,
-    current_version: null,
-    latest_version: null,
-    update_available: false,
-    bin_path: null,
-    native_bin_path: null,
-    script_path: null,
-    data_dir: null,
-    install_command: "npm install -g @dbx-app/mcp-server@latest",
-    update_command: "npm install -g @dbx-app/mcp-server@latest",
-    uninstall_command: "npm uninstall -g @dbx-app/mcp-server",
-    error: "MCP Server status is only available in the desktop app.",
-  };
-}
 
-export async function checkMcpKeychainAccess(): Promise<import("@/lib/backend/tauri").McpKeychainAccess> {
-  return "not_applicable";
-}
 
-export async function authorizeMcpKeychain(): Promise<string> {
-  throw new Error("MCP Keychain authorization is only available in the desktop app.");
-}
 
-export async function installMcpServer(): Promise<string> {
-  throw new Error("MCP Server installation is only available in the desktop app.");
-}
 
-export async function installNativeMcpServer(): Promise<string> {
-  throw new Error("Native MCP Server installation is only available in the desktop app.");
-}
 
-export async function uninstallMcpServer(): Promise<string> {
-  throw new Error("MCP Server uninstallation is only available in the desktop app.");
-}
 
-export async function uninstallNpmMcpServer(): Promise<string> {
-  throw new Error("MCP Server npm fallback removal is only available in the desktop app.");
-}
 
 export async function getSystemProxyUrl(): Promise<string | null> {
   return null;

@@ -10,7 +10,7 @@ beforeEach(() => {
   mocks.save.mockResolvedValue(undefined);
 });
 describe("plugin shortcut persistence", () => {
-  it.each(["sidebar-bottom", "plugin-center"] as const)("restores %s preferences after restart and rolls back failed writes", async (position) => {
+  it.each(["sidebar-bottom", "toolbar"] as const)("restores %s preferences after restart and rolls back failed writes", async (position) => {
     let saved: unknown = {};
     mocks.load.mockImplementation(async () => saved);
     mocks.save.mockImplementation(async (value) => {

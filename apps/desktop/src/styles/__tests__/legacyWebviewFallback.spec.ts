@@ -8,7 +8,6 @@ const dialogScrollContentSource = readFileSync(new URL("../../components/ui/dial
 const dialogOverlaySource = readFileSync(new URL("../../components/ui/dialog/DialogOverlay.vue", import.meta.url), "utf8");
 const codeSnapshotDialogSource = readFileSync(new URL("../../components/codeSnapshot/CodeSnapshotDialog.vue", import.meta.url), "utf8");
 const dataTransferDialogSource = readFileSync(new URL("../../components/transfer/DataTransferDialog.vue", import.meta.url), "utf8");
-const updateDialogSource = readFileSync(new URL("../../components/layout/UpdateDialog.vue", import.meta.url), "utf8");
 const dataGridColumnHeaderSource = readFileSync(new URL("../../components/grid/DataGridColumnHeader.vue", import.meta.url), "utf8");
 const ddlViewDialogSource = readFileSync(new URL("../../components/objects/DdlViewDialog.vue", import.meta.url), "utf8");
 const schemaDiagramDialogSource = readFileSync(new URL("../../components/diagram/SchemaDiagramDialog.vue", import.meta.url), "utf8");
@@ -17,11 +16,9 @@ const connectionTreeSource = readFileSync(new URL("../../components/sidebar/Conn
 const activeConnectionFilterSource = readFileSync(new URL("../../components/sidebar/ActiveConnectionFilterButton.vue", import.meta.url), "utf8");
 const scheduledDatabaseBackupSource = readFileSync(new URL("../../components/backup/ScheduledDatabaseBackupSettings.vue", import.meta.url), "utf8");
 const databaseBackupConfigFieldsSource = readFileSync(new URL("../../components/backup/DatabaseBackupConfigFields.vue", import.meta.url), "utf8");
-const driverStoreDialogSource = readFileSync(new URL("../../components/config/DriverStoreDialog.vue", import.meta.url), "utf8");
-const driverStoreAgentRowSource = readFileSync(new URL("../../components/config/DriverStoreAgentRow.vue", import.meta.url), "utf8");
 const tunnelProfileManagerSource = readFileSync(new URL("../../components/connection/TunnelProfileManager.vue", import.meta.url), "utf8");
-const changelogPanelSource = readFileSync(new URL("../../components/settings/ChangelogPanel.vue", import.meta.url), "utf8");
 const editorSettingsDialogSource = readFileSync(new URL("../../components/editor/EditorSettingsDialog.vue", import.meta.url), "utf8");
+const settingsTransferPanelSource = readFileSync(new URL("../../components/settings/SettingsTransferPanel.vue", import.meta.url), "utf8");
 const switchSource = readFileSync(new URL("../../components/ui/switch/Switch.vue", import.meta.url), "utf8");
 const aiAssistantSource = readFileSync(new URL("../../components/editor/AiAssistant.vue", import.meta.url), "utf8");
 const dataGridSource = readFileSync(new URL("../../components/grid/DataGrid.vue", import.meta.url), "utf8");
@@ -147,13 +144,6 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[860px]"]');
   });
 
-  it("keeps the update dialog layout on the global legacy dialog fallbacks", () => {
-    expect(updateDialogSource).toContain('class="sm:max-w-[700px]"');
-    expect(updateDialogSource).not.toContain("dbx-legacy-webview");
-    expect(updateDialogSource).not.toContain("@media");
-    expect(globalsCss).toContain('html.dbx-legacy-webview [data-slot="dialog-content"][class*="sm:max-w-[700px]"]');
-  });
-
   it("keeps the DDL dialog layout on the global legacy dialog fallbacks", () => {
     expect(ddlViewDialogSource).toContain('class="dbx-ddl-view-dialog flex min-h-0 flex-col overflow-hidden sm:max-w-190"');
     // The dialog content element is rendered through reka-ui's portal Teleport and
@@ -242,10 +232,8 @@ describe("legacy WebView CSS fallbacks", () => {
 
   it("keeps foreground alpha utilities readable in legacy WebViews", () => {
     // Tailwind v4 emits bg-foreground/10 as a full-color declaration with the
-    // real tint behind `@supports (color: color-mix(...))`. WebKit without
-    // color-mix() keeps the full-color one, so the update dialog tab badge
-    // rendered as a solid near-black pill on macOS 12 (Safari < 16.2).
-    expect(updateDialogSource).toContain('class="rounded-full bg-foreground/10 px-1.5 text-[11px]"');
+    // real tint behind `@supports (color: color-mix(...))`; WebKit without
+    // color-mix() keeps the full-color one, so the fallbacks must hard-code tints.
     expect(globalsCss).toContain("html.dbx-legacy-webview .bg-foreground\\/10");
     expect(globalsCss).toContain("background-color: rgba(var(--dbx-foreground-rgb), 0.06) !important;");
     expect(globalsCss).toContain("background-color: rgba(var(--dbx-foreground-rgb), 0.1) !important;");
@@ -461,48 +449,6 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(globalsCss.slice(fallbackStart, nextSupports)).toContain(".dark .dbx-tile-selected");
   });
 
-  it("keeps the driver manager category navigation scoped to legacy WebViews", () => {
-    const fallbackStart = driverStoreDialogSource.indexOf("html.dbx-legacy-webview .driver-store-tab");
-    const fallbackEnd = driverStoreDialogSource.indexOf("@media (max-width: 900px)", fallbackStart);
-    const fallback = driverStoreDialogSource.slice(fallbackStart, fallbackEnd);
-
-    expect(driverStoreDialogSource).toContain("data-driver-category-nav");
-    expect(driverStoreDialogSource).toContain("driver-store-agent-results min-w-0 flex-1 overflow-y-auto sm:pl-4");
-    expect(fallbackStart).toBeGreaterThan(-1);
-    expect(fallbackEnd).toBeGreaterThan(fallbackStart);
-    expect(fallback).toContain(".driver-store-tab");
-    expect(fallback).toContain("margin-top: 1.25rem !important;");
-    expect(fallback).toContain(".driver-store-agent-tab:not([hidden])");
-    expect(fallback).toContain(".driver-store-jdbc-tab:not([hidden])");
-    expect(fallback).toContain(".driver-store-storage-tab:not([hidden])");
-    expect(fallback).toContain("gap: 1.25rem !important;");
-    expect(fallback).not.toContain(".driver-store-tab .space-y-");
-    expect(fallback).toContain("[data-driver-category-nav]");
-    expect(fallback).toContain("width: 10rem !important;");
-    expect(fallback).toContain("flex-direction: column !important;");
-    expect(fallback).toContain("overflow-y: auto !important;");
-    expect(fallback).toContain('[data-driver-category-nav] > button[aria-current="page"]');
-    expect(fallback).toContain(".driver-store-agent-results");
-    expect(fallback).toContain("width: 0 !important;");
-    expect(fallback).toContain("flex: 1 1 0% !important;");
-  });
-
-  it("keeps driver manager local import buttons large enough to target", () => {
-    const fallbackStart = driverStoreDialogSource.indexOf("html.dbx-legacy-webview .driver-store-local-import-button");
-    const fallbackEnd = driverStoreDialogSource.indexOf("@media (max-width: 900px)", fallbackStart);
-    const fallback = driverStoreDialogSource.slice(fallbackStart, fallbackEnd);
-
-    expect(driverStoreAgentRowSource.match(/driver-store-local-import-button h-7 w-7 rounded-md text-xs text-muted-foreground/g)?.length).toBe(1);
-    expect(driverStoreAgentRowSource.match(/variant="ghost"\n\s+class="driver-store-local-import-button/g)?.length).toBe(1);
-    expect(driverStoreDialogSource).toContain("<DriverStoreAgentRow");
-    expect(fallback).toContain(".driver-store-local-import-button");
-    expect(fallback).toContain("width: 2rem !important;");
-    expect(fallback).toContain("height: 2rem !important;");
-    expect(fallback).toContain(".driver-store-local-import-button svg");
-    expect(fallback).toContain("width: 1rem !important;");
-    expect(fallback).toContain("height: 1rem !important;");
-  });
-
   it("keeps tunnel profile selection readable in legacy WebViews", () => {
     expect(tunnelProfileManagerSource).toContain("profile.id === selectedId ? 'tunnel-profile-option--selected border-primary bg-primary/5'");
     expect(tunnelProfileManagerSource).toContain("html.dbx-legacy-webview .tunnel-profile-option--selected");
@@ -609,20 +555,11 @@ describe("legacy WebView CSS fallbacks", () => {
     expect(fallback).toContain("line-height: 1.25rem !important;");
     expect(fallback).toContain("-webkit-appearance: inner-spin-button !important;");
     expect(fallback).toContain("::-webkit-inner-spin-button");
-    expect(editorSettingsDialogSource).toContain("settings-mcp-config-tabs");
-    expect(editorSettingsDialogSource).toContain("settings-mcp-config-tab");
-    expect(fallback).toContain(".settings-layout .settings-mcp-config-tabs");
-    expect(fallback).toContain("gap: 0.25rem !important;");
-    expect(fallback).toContain(".settings-layout .settings-mcp-config-tab");
-    expect(fallback).toContain("flex: 0 0 auto !important;");
-    expect(fallback).toContain("min-width: max-content !important;");
     expect(editorSettingsDialogSource).toContain('class="settings-ai-back-button"');
     expect(fallback).toContain(".settings-ai-back-button");
     expect(fallback).toContain("margin-left: -0.625rem !important;");
-    expect(editorSettingsDialogSource).toContain("settings-about-section-header flex flex-col gap-3");
-    expect(editorSettingsDialogSource).toContain("settings-about-section-actions flex shrink-0 flex-wrap items-center gap-2");
-    expect(changelogPanelSource).toContain("settings-about-section-header flex flex-col gap-3");
-    expect(changelogPanelSource).toContain("settings-about-section-actions flex shrink-0 flex-wrap items-center gap-2");
+    expect(settingsTransferPanelSource).toContain("settings-about-section-header flex flex-col gap-3");
+    expect(settingsTransferPanelSource).toContain("settings-about-section-actions flex shrink-0 flex-wrap items-center gap-2");
     expect(fallback).toContain(".settings-about-section-header");
     expect(fallback).toContain("justify-content: space-between !important;");
     expect(fallback).toContain(".settings-about-section-actions");

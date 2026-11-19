@@ -8,7 +8,7 @@ export function isHistoryRetentionLimit(value: unknown): value is number {
   return typeof value === "number" && HISTORY_RETENTION_LIMITS.some((limit) => limit === value);
 }
 
-/** A server-owned setting: browser localStorage cannot configure MCP retention. */
+/** A server-owned setting: browser localStorage cannot configure history retention. */
 export function useHistoryRetentionSetting(loadLimit: () => Promise<number> = loadHistoryRetentionLimit, saveLimit: (limit: number) => Promise<void> = saveHistoryRetentionLimit) {
   const draft = ref(DEFAULT_HISTORY_RETENTION_LIMIT);
   const persisted = ref(DEFAULT_HISTORY_RETENTION_LIMIT);

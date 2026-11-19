@@ -59,7 +59,6 @@ export interface DatabaseDriverManifestEntry {
   label: string;
   dialect?: string;
   runtimeMode: DatabaseRuntimeMode;
-  mcpMode: "direct" | "bridge" | "unsupported";
   agentKey?: string;
   driverStoreVisible?: boolean;
   driverStoreOrder?: number;

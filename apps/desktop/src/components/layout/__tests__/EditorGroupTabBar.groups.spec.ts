@@ -488,7 +488,7 @@ describe("EditorGroupTabBar group behavior", () => {
     settings.editorSettings.colorizeConnectionTabs = true;
     store.createTab("pg-1", "app", "Query", "query");
     const { app, host } = mountBar(store.focusedGroupId, store.tabs.slice(), store.activeTabId, pinia, {
-      specialPageTabs: { settingsOpen: true, settingsActive: true, driverStoreOpen: false, driverStoreActive: false, pluginCenterOpen: false, pluginCenterActive: false, driverUpdateCount: 0 },
+      specialPageTabs: { settingsOpen: true, settingsActive: true, driverStoreOpen: false, driverStoreActive: false, driverUpdateCount: 0 },
     });
 
     try {

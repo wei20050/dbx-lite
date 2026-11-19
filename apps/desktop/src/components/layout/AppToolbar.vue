@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TOOLBAR_ITEM_GROUPS, toolbarGroupOrder, orderToolbarItems } from "@/lib/settings/toolbarCustomization";
-import { computed, defineAsyncComponent, ref, shallowRef, onMounted, onBeforeUnmount, h, nextTick, watch } from "vue";
+import { computed, defineAsyncComponent, ref, shallowRef, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -20,15 +20,11 @@ import {
   TableProperties,
   Settings,
   LogOut,
-  CloudDownload,
-  Package,
-  PlugZap,
   FileDown,
   FolderTree,
   Pin,
   PinOff,
   CalendarClock,
-  Waypoints,
   RefreshCw,
   AppWindow,
   PanelsTopLeft,
@@ -39,7 +35,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import LightDropdown, { type LightDropdownItem } from "@/components/ui/LightDropdown.vue";
 import WindowControls from "@/components/layout/WindowControls.vue";
 import ExportProgressPopover from "@/components/export/ExportProgressPopover.vue";
-import ToolbarUpdateIcon from "@/components/layout/ToolbarUpdateIcon.vue";
 import PluginShortcutToolbar from "@/components/plugins/PluginShortcutToolbar.vue";
 import AppLogo from "@/components/icons/AppLogo.vue";
 import { MAC_TRAFFIC_LIGHT_X, macTrafficLightInsetPaddingForScale, shouldReserveMacTrafficLightInset, useWindowControls } from "@/composables/useWindowControls";
@@ -51,16 +46,6 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStor
 
 const RecentClosedTabsDialog = defineAsyncComponent(() => import("@/components/tabs/RecentClosedTabsDialog.vue"));
 const showRecentClosedTabs = ref(false);
-
-const GithubIcon = {
-  render() {
-    return h("svg", { class: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor" }, [
-      h("path", {
-        d: "M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.627 0 12 0z",
-      }),
-    ]);
-  },
-};
 
 const props = defineProps<{
   isDark: boolean;
@@ -78,17 +63,7 @@ const props = defineProps<{
   sqlLibrarySaveFeedbackId: number;
   showSqlFilePanel: boolean;
   showDriverStore: boolean;
-  showPluginCenter: boolean;
   showSettingsPage: boolean;
-  checkingUpdates: boolean;
-  updateVersion?: string;
-  hasUpdateAvailable: boolean;
-  isDownloadingUpdate: boolean;
-  downloadProgress: number | null;
-  updateReadyToInstall: boolean;
-  updateReady: boolean;
-  agentDriverUpdateCount: number;
-  hasMcpUpdateAvailable: boolean;
   hasConnections: boolean;
   hasClosedTabs?: boolean;
   canNewQuery: boolean;
@@ -107,17 +82,13 @@ const emit = defineEmits<{
   "toggle-history": [];
   "toggle-sql-library": [];
   "toggle-sql-file-panel": [];
-  "open-github": [];
   "open-settings": [];
   "open-driver-store": [];
-  "open-plugin-center": [];
-  "check-updates": [];
   "open-transfer": [];
   "open-sql-file": [];
   "open-schema-diff": [];
   "open-data-compare": [];
   "open-backups": [];
-  "open-mcp-settings": [];
   "focus-workspace-window": [label: string];
   "refresh-workspace-windows": [];
   "consolidate-workspace-windows": [];
@@ -139,7 +110,6 @@ const orderedToolbarKeys = computed(() => ({
 }));
 watch(orderedToolbarKeys, resetToolbarMeasurement, { deep: true });
 const webLogoPosition = computed(() => settingsStore.editorSettings.webLogoPosition ?? "left");
-const showToolbarUpdateEntry = computed(() => toolbarItems.value.checkUpdates);
 const { isMac, isDesktop, showControls, isMaximized, isFullscreen, isAlwaysOnTop, minimize, toggleMaximize, toggleAlwaysOnTop, close } = useWindowControls();
 const workspaceWindowCaption = computed(() => {
   if (!isDesktop) return "";
@@ -192,15 +162,10 @@ function handleWorkspaceWindowSelection(value: string) {
 // window is actually pinned even with the setting off, so turning the setting
 // off can never leave the user with a pinned window and no way to unpin it.
 const showAlwaysOnTopButton = computed(() => isDesktop && (toolbarItems.value.alwaysOnTop || isAlwaysOnTop.value));
-const updateTooltip = computed(() => {
-  if (props.hasUpdateAvailable && props.updateReady) return t("updates.restartRequiredTooltip");
-  if (props.hasUpdateAvailable && props.updateReadyToInstall) return t("updates.downloadedReady", { version: props.updateVersion ?? "" });
-  return t("updates.check");
-});
 const sidebarExpandTooltip = computed(() => formatShortcutTooltip(t("sidebar.expand"), settingsStore.editorSettings.shortcuts.toggleSidebar));
 const newQueryTooltip = computed(() => formatShortcutTooltip(t("toolbar.newQuery"), settingsStore.editorSettings.shortcuts.newQuery));
 const aiTooltip = computed(() => formatShortcutTooltip("AI", settingsStore.editorSettings.shortcuts.toggleAiPanel));
-const settingsTooltip = computed(() => (props.hasMcpUpdateAvailable ? t("toolbar.mcpUpdateAvailable") : formatShortcutTooltip(t("settings.title"), settingsStore.editorSettings.shortcuts.openSettings)));
+const settingsTooltip = computed(() => formatShortcutTooltip(t("settings.title"), settingsStore.editorSettings.shortcuts.openSettings));
 
 const sqlLibrarySaveFeedbackActive = ref(false);
 const SQL_LIBRARY_BOOKMARK_PATH = "M10 2 L10 10 L13 7 L16 10 L16 2";
@@ -273,8 +238,6 @@ const toolbarEl = ref<HTMLElement>();
 const newConnectionLabelEl = shallowRef<HTMLElement>();
 const toolbarCollapsed = ref(false);
 let primaryToolbarExpandedRequiredWidth: number | null = null;
-const pluginCenterGroup = shallowRef<HTMLElement | null>(null);
-const showPluginCenterShortcuts = computed(() => settingsStore.editorSettings.pluginShortcuts.enabled && settingsStore.editorSettings.pluginShortcuts.position === "plugin-center");
 const shouldReserveTrafficLightInset = computed(() => shouldReserveMacTrafficLightInset(isMac, isFullscreen.value, isDesktop));
 
 function checkToolbarWidth() {
@@ -335,15 +298,6 @@ const collapsibleRightItemDefs = computed(() => {
       disabled: props.immediateSyncing,
     });
   }
-  if (showToolbarUpdateEntry.value) {
-    items.push({
-      key: "checkUpdates",
-      label: t("updates.check"),
-      icon: CloudDownload,
-      action: () => emit("check-updates"),
-      disabled: false,
-    });
-  }
   if (toolbarItems.value.exportProgress !== false) {
     items.push({
       key: "exportProgress",
@@ -395,15 +349,6 @@ const collapsibleRightItemDefs = computed(() => {
       label: t("toolbar.theme"),
       icon: themeTriggerIcon.value,
       action: cycleThemeMode,
-      disabled: false,
-    });
-  }
-  if (toolbarItems.value.github) {
-    items.push({
-      key: "github",
-      label: "GitHub",
-      icon: GithubIcon,
-      action: () => emit("open-github"),
       disabled: false,
     });
   }
@@ -661,7 +606,7 @@ function resetToolbarMeasurement() {
 watch(measuredTrafficLightInset, resetRightToolbarMeasurement);
 watch(collapsibleRightItemDefs, resetToolbarMeasurement, { flush: "post" });
 watch(toolbarItems, resetToolbarMeasurement, { deep: true, flush: "post" });
-watch(() => [workspaceWindowMenuVisible.value, workspaceWindowCaption.value, props.hasUpdateAvailable, props.showLogout, showAlwaysOnTopButton.value, isAlwaysOnTop.value, props.canNewQuery, props.hasClosedTabs, props.agentDriverUpdateCount], resetToolbarMeasurement, { flush: "post" });
+watch(() => [workspaceWindowMenuVisible.value, workspaceWindowCaption.value, props.showLogout, showAlwaysOnTopButton.value, isAlwaysOnTop.value, props.canNewQuery, props.hasClosedTabs], resetToolbarMeasurement, { flush: "post" });
 watch(
   showRightToolbarLabels,
   (show) => {
@@ -722,13 +667,10 @@ type ToolbarMenuItem = LightDropdownItem & { action: () => void };
 const toolbarMenuItemKeys: Record<string, string> = {
   "open-sql-editor-file": "openSql",
   transfer: "dataTransfer",
-  "driver-store": "driverManager",
-  "plugin-center": "pluginCenter",
   "sql-file": "sqlFile",
   "schema-diff": "schemaDiff",
   "data-compare": "dataCompare",
   "database-backups": "databaseBackups",
-  "mcp-settings": "mcpSettings",
   "new-connection": "newConnection",
   "new-query": "newQuery",
   settings: "settings",
@@ -770,18 +712,6 @@ function buildToolbarMenuItems(includeVisiblePrimaryItems: boolean): ToolbarMenu
       disabled: !props.hasConnections,
     });
   }
-  if (includeVisiblePrimaryItems || !toolbarItems.value.driverManager) {
-    items.push({
-      value: "driver-store",
-      label: props.agentDriverUpdateCount > 0 ? `${t("toolbar.driverManager")} (${props.agentDriverUpdateCount})` : t("toolbar.driverManager"),
-      icon: Package,
-      action: () => emit("open-driver-store"),
-      disabled: false,
-    });
-  }
-  if (includeVisiblePrimaryItems || !toolbarItems.value.pluginCenter) {
-    items.push({ value: "plugin-center", label: t("toolbar.pluginCenter"), icon: PlugZap, action: () => emit("open-plugin-center"), disabled: false });
-  }
   if (toolbarItems.value.sqlFile) {
     items.push({
       value: "sql-file",
@@ -815,15 +745,6 @@ function buildToolbarMenuItems(includeVisiblePrimaryItems: boolean): ToolbarMenu
       label: t("databaseBackup.title"),
       icon: CalendarClock,
       action: () => emit("open-backups"),
-      disabled: false,
-    });
-  }
-  if (toolbarItems.value.mcpSettings !== false) {
-    items.push({
-      value: "mcp-settings",
-      label: t("settings.openMcpSettings"),
-      icon: Waypoints,
-      action: () => emit("open-mcp-settings"),
       disabled: false,
     });
   }
@@ -882,9 +803,6 @@ const toolbarStyle = computed(() => {
 function setNewConnectionLabelEl(el: unknown): void {
   newConnectionLabelEl.value = (el as HTMLElement | null) ?? undefined;
 }
-function setPluginCenterGroup(el: unknown): void {
-  pluginCenterGroup.value = el as HTMLElement | null;
-}
 function setSqlLibraryIconPathRef(el: unknown): void {
   sqlLibraryIconPathRef.value = el as SVGPathElement | null;
 }
@@ -898,18 +816,15 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
 
 <template>
   <div ref="toolbarEl" class="app-toolbar h-10 flex items-center gap-1 px-2 border-b bg-muted/30 shrink-0 overflow-hidden" :style="toolbarStyle" :data-right-toolbar-labels="effectiveRightToolbarLabels" data-tauri-drag-region @dblclick="onToolbarDblClick">
-    <a
+    <div
       v-if="!isDesktop && webLogoPosition === 'left'"
-      href="https://dbxio.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="flex items-center gap-1.5 h-8 px-2 rounded-md hover:bg-muted/60 transition-colors shrink-0 select-none mr-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      title="DBX"
+      class="flex items-center gap-1.5 h-8 px-2 rounded-md shrink-0 select-none mr-0.5"
+      title="dbx-lite"
       data-testid="web-brand-logo"
     >
       <AppLogo class="h-5 w-5 rounded shrink-0 pointer-events-none" />
-      <span class="font-bold text-xs tracking-tight text-foreground/90 translate-y-px">DBX</span>
-    </a>
+      <span class="font-bold text-xs tracking-tight text-foreground/90 translate-y-px">dbx-lite</span>
+    </div>
     <Tooltip v-if="showSidebarExpand">
       <TooltipTrigger as-child>
         <Button variant="ghost" size="icon" class="toolbar-action-button h-8 w-8 shrink-0" :aria-label="t('sidebar.expand')" @click="emit('expand-sidebar')">
@@ -938,21 +853,7 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
         <ArrowLeftRight class="h-3.5 w-3.5" />
         <span :class="toolbarTextLabelClass">{{ t("transfer.dataTransfer") }}</span>
       </Button>
-      <Button data-toolbar-item="driverManager" v-if="toolbarKey === 'driverManager' && !toolbarCollapsed && toolbarItems.driverManager" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'bg-accent': showDriverStore }]" @click="emit('open-driver-store')">
-        <Package class="h-3.5 w-3.5" />
-        <span :class="toolbarTextLabelClass">{{ t("toolbar.driverManager") }}</span>
-        <!-- 小圆点仅提示"有可更新驱动"，具体数量交给对话框内标签页红点展示，避免工具栏长期挂红数字。 -->
-        <span v-if="agentDriverUpdateCount > 0" class="ml-0.5 inline-block h-2 w-2 rounded-full bg-red-500" :aria-label="t('toolbar.updatableDriverCount')" :title="t('toolbar.updatableDriverCount')" />
-      </Button>
-      <div data-toolbar-item="pluginCenter" v-if="toolbarKey === 'pluginCenter' && !toolbarCollapsed && (toolbarItems.pluginCenter || showPluginCenterShortcuts)" :ref="setPluginCenterGroup" class="flex shrink-0 items-center rounded-md" :class="{ 'bg-accent': showPluginCenter }">
-        <Button v-if="toolbarItems.pluginCenter" variant="ghost" size="sm" :class="[toolbarTextButtonClass, { 'rounded-r-none': showPluginCenterShortcuts }]" @click="emit('open-plugin-center')">
-          <PlugZap class="h-3.5 w-3.5" />
-          <span :class="toolbarTextLabelClass">{{ t("toolbar.pluginCenter") }}</span>
-        </Button>
-        <PluginShortcutToolbar v-if="showPluginCenterShortcuts" dropdown-only :menu-anchor="pluginCenterGroup" @layout-change="handlePluginToolbarLayout" />
-      </div>
     </template>
-    <PluginShortcutToolbar v-if="toolbarCollapsed && showPluginCenterShortcuts" dropdown-only @layout-change="handlePluginToolbarLayout" />
     <LightDropdown
       v-if="toolbarCollapsed ? collapsedItems.length > 0 : showMoreDropdown"
       model-value=""
@@ -988,33 +889,7 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
 
     <!-- Right-side items wrapped in overflow-aware container -->
     <div ref="rightWrapper" data-toolbar-right-actions class="flex min-w-0 items-center gap-0.5 overflow-hidden">
-      <PluginShortcutToolbar v-if="settingsStore.editorSettings.pluginShortcuts.enabled && settingsStore.editorSettings.pluginShortcuts.position === 'toolbar'" @layout-change="handlePluginToolbarLayout" /><template v-for="toolbarKey in orderedToolbarKeys.right" :key="toolbarKey"
-        ><template v-if="toolbarKey === 'checkUpdates' && showToolbarUpdateEntry">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                data-toolbar-item="checkUpdates"
-                v-show="isRightItemVisible('checkUpdates')"
-                data-toolbar-update-trigger
-                :data-toolbar-update-action="hasUpdateAvailable ? '' : undefined"
-                :variant="hasUpdateAvailable ? 'default' : 'ghost'"
-                :size="hasUpdateAvailable ? 'sm' : 'icon'"
-                class="toolbar-action-button shrink-0"
-                :class="hasUpdateAvailable ? 'h-7 gap-1.5 px-2 text-xs' : 'relative h-8 w-8'"
-                :data-right-toolbar-label="hasUpdateAvailable ? undefined : t('updates.check')"
-                :aria-label="hasUpdateAvailable ? t('updates.updateAction') : t('updates.check')"
-                @click="emit('check-updates')"
-              >
-                <template v-if="hasUpdateAvailable">
-                  <CloudDownload class="h-3.5 w-3.5" />
-                  <span>{{ t("updates.updateAction") }}</span>
-                </template>
-                <ToolbarUpdateIcon v-else :available="false" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{{ updateTooltip }}</TooltipContent>
-          </Tooltip>
-        </template>
+      <PluginShortcutToolbar v-if="settingsStore.editorSettings.pluginShortcuts.enabled && settingsStore.editorSettings.pluginShortcuts.position === 'toolbar'" @layout-change="handlePluginToolbarLayout" /><template v-for="toolbarKey in orderedToolbarKeys.right" :key="toolbarKey">
         <Tooltip v-if="toolbarKey === 'immediateSync' && toolbarItems.immediateSync">
           <TooltipTrigger as-child>
             <Button
@@ -1170,18 +1045,6 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
             </Button>
           </TooltipTrigger>
           <TooltipContent>{{ t("toolbar.theme") }}</TooltipContent>
-        </Tooltip>
-        <Tooltip v-if="toolbarKey === 'github' && toolbarItems.github">
-          <TooltipTrigger as-child>
-            <Button data-toolbar-item="github" v-show="isRightItemVisible('github')" variant="ghost" size="icon" class="toolbar-action-button h-8 w-8 shrink-0" data-right-toolbar-label="GitHub" aria-label="GitHub" @click="emit('open-github')">
-              <svg class="toolbar-action-icon h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.627 0 12 0z"
-                />
-              </svg>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>GitHub</TooltipContent>
         </Tooltip></template
       >
     </div>
@@ -1196,18 +1059,15 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
       <TooltipContent>{{ t(showRightToolbarLabels ? "toolbar.hideRightToolbarLabels" : "toolbar.showRightToolbarLabels") }}</TooltipContent>
     </Tooltip>
 
-    <a
+    <div
       v-if="!isDesktop && webLogoPosition === 'right'"
-      href="https://dbxio.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="flex items-center gap-1.5 h-8 px-2 rounded-md hover:bg-muted/60 transition-colors shrink-0 select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      title="DBX"
+      class="flex items-center gap-1.5 h-8 px-2 rounded-md shrink-0 select-none"
+      title="dbx-lite"
       data-testid="web-brand-logo"
     >
       <AppLogo class="h-5 w-5 rounded shrink-0 pointer-events-none" />
-      <span class="font-bold text-xs tracking-tight text-foreground/90 translate-y-px">DBX</span>
-    </a>
+      <span class="font-bold text-xs tracking-tight text-foreground/90 translate-y-px">dbx-lite</span>
+    </div>
 
     <template v-for="toolbarKey in orderedToolbarKeys.controls" :key="toolbarKey"
       ><Tooltip v-if="toolbarKey === 'settings' && toolbarItems.settings !== false">
@@ -1224,7 +1084,6 @@ function setSqlLibraryMorphToBookmarkRef(el: unknown): void {
           >
             <Settings class="toolbar-action-icon h-4 w-4" :class="{ 'toolbar-action-icon--active': showSettingsPage }" />
             <span v-if="showSettingsPage" class="toolbar-panel-status" aria-hidden="true" />
-            <span v-if="hasMcpUpdateAvailable" class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" :aria-label="t('toolbar.mcpUpdateAvailable')" :title="t('toolbar.mcpUpdateAvailable')" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{{ settingsTooltip }}</TooltipContent>

@@ -51,13 +51,6 @@ vi.mock("@/components/ui/button", async () => {
   };
 });
 
-// ChangelogPanel fires a changelog network fetch on mount (About tab); the
-// network is irrelevant to the reset contract under test.
-vi.mock("@/components/settings/ChangelogPanel.vue", async () => {
-  const { defineComponent } = await import("vue");
-  return { default: defineComponent({ setup: () => () => null }) };
-});
-
 // Keep every real constant/normalizer export, but back the store composable
 // with a plain stub so the dialog boots without the Tauri backend. A custom
 // formatSql binding makes the value reset observable in the row pill.
@@ -195,26 +188,4 @@ describe("EditorSettingsDialog shortcut reset exits capture state (behavior)", (
     expect(restored.editButton).toBeTruthy();
   });
 
-  it("full reset on the about tab also exits a capture state that leaked across tabs", async () => {
-    const { host, setTab } = await mountSettingsPage("shortcuts");
-
-    formatSqlRowControls(host).editButton!.click();
-    await flushAsyncUpdates();
-    expect(formatSqlRowControls(host).cancelButton).toBeTruthy();
-
-    setTab("about");
-    await flushAsyncUpdates();
-    const fullResetButton = findButtonByText(host, "settings.resetAllDefaults");
-    expect(fullResetButton).toBeTruthy();
-    fullResetButton!.click();
-    await flushAsyncUpdates();
-
-    setTab("shortcuts");
-    await flushAsyncUpdates();
-
-    const restored = formatSqlRowControls(host);
-    expect(restored.input.value).toBe(formatSqlDefaultPill());
-    expect(restored.cancelButton).toBeNull();
-    expect(restored.editButton).toBeTruthy();
-  });
 });

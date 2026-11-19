@@ -90,10 +90,7 @@ test("core owns application orchestration in real business directories", () => {
 });
 
 test("transfer entrypoints delegate orchestration to the core runner", () => {
-  const entrypoints = [
-    "src-tauri/src/commands/transfer.rs",
-    "crates/dbx-web/src/routes/transfer.rs",
-  ];
+  const entrypoints = ["src-tauri/src/commands/transfer.rs"];
   const orchestrationCalls = [
     "rename_tables_to_backup",
     "transfer_postgres_schema_dependencies",
@@ -142,60 +139,18 @@ test("code generators and runtime assets belong to their implementation crates",
   assert.match(read("crates/dbx-sql-dialect/build.rs"), /plugins\/dialects/);
   assert.match(read("crates/dbx-ai-provider/src/ai_pi_agent_cli.rs"), /assets\/pi-mcp-bridge\.mjs/);
   assert.ok(existsSync(path.join(root, "crates/dbx-ai-provider/assets/pi-mcp-bridge.mjs")));
-  assert.deepEqual(JSON.parse(read("crates/dbx-driver-agent/assets/agent-protocol-v2.json")), JSON.parse(read("agents/common/src/main/resources/agent-protocol-v2.json")));
   assert.match(read("crates/dbx-platform/src/lib.rs"), /#\[cfg\(all\(target_os = "windows", target_env = "gnu"\)\)\]\s*mod nanosleep_stub/);
 });
 
-test("Docker dependency caching and Nix include the full workspace", () => {
-  const dockerfile = read("deploy/Dockerfile");
-  const dependencyStage = dockerfile.split("COPY crates/ crates/")[0];
-  for (const pkg of members.values()) {
-    const relativeManifest = path.relative(root, pkg.manifest_path).replaceAll(path.sep, "/");
-    assert.ok(dependencyStage.includes(`COPY ${relativeManifest} `), `Docker dependency stage misses ${relativeManifest}`);
-  }
-  for (const input of ["plugins/dialects/", "plugins/connection-types/"]) {
-    assert.ok(dockerfile.includes(`COPY ${input} ${input}`));
-  }
-  assert.ok(dockerfile.includes("dbx-sqlite-worker/src/main.rs"));
-  assert.match(read("flake.nix"), /src = pkgs\.lib\.cleanSource \.\/\.;/);
-});
-
-test("CI and release tracking follow the new source owners", () => {
+test("CI and release target the Windows desktop app", () => {
   const ci = read(".github/workflows/ci.yml");
   assert.ok(ci.includes("node --test scripts/core-architecture.test.mjs"));
-  assert.ok(ci.includes("'crates/**'"));
-  for (const input of ["plugins/dialects/**", "plugins/connection-types/**", "crates/dbx-driver-agent/assets/agent-protocol-v2.json"]) {
-    assert.ok(ci.includes(`'${input}'`), `CI misses ${input}`);
-  }
-  assert.ok(read("scripts/release.mjs").includes('"crates/dbx-driver-mongodb/src/mongo_shell.rs"'));
-  assert.ok(read("scripts/release.mjs").includes('"skills/dbx/"'));
-  assert.ok(ci.includes("'skills/dbx/**'"));
-});
-
-test("the standalone DuckDB lockfile includes core's internal dependency closure", () => {
-  const lockedPackages = new Map(
-    read("agents/drivers/duckdb/Cargo.lock")
-      .replaceAll("\r\n", "\n")
-      .split("\n[[package]]\n")
-      .slice(1)
-      .map((block) => [block.match(/^name = "([^"]+)"$/m)[1], block]),
-  );
-  const visited = new Set();
-  function inspect(name) {
-    if (visited.has(name)) return;
-    visited.add(name);
-    const pkg = members.get(name);
-    const locked = lockedPackages.get(name);
-    assert.ok(locked, `DuckDB lockfile misses ${name}`);
-    assert.ok(locked.includes(`version = "${pkg.version}"\n`), `DuckDB lockfile has a stale version of ${name}`);
-    assert.doesNotMatch(locked, /^source = /m);
-    const dependencies = new Set([...locked.matchAll(/^ "([^"]+)",$/gm)].map((match) => match[1].split(" ")[0]));
-    for (const dependency of pkg.dependencies.filter((dep) => dep.kind !== "dev" && !dep.optional && members.has(dep.name))) {
-      assert.ok(dependencies.has(dependency.name), `DuckDB lockfile misses ${name} -> ${dependency.name}`);
-      inspect(dependency.name);
-    }
-  }
-  inspect("dbx-core");
+  assert.ok(ci.includes("pnpm check:connection-types"));
+  assert.match(ci, /runs-on: windows-2022/);
+  const release = read(".github/workflows/release.yml");
+  assert.match(release, /runs-on: windows-2022/);
+  assert.doesNotMatch(release, /runs-on: (?:ubuntu|macos)/);
+  assert.ok(!existsSync(path.join(root, ".github/workflows/daily-beta-release.yml")));
 });
 
 test("source-sensitive client tests point to existing owners", () => {
@@ -211,5 +166,4 @@ test("source-sensitive client tests point to existing owners", () => {
     }
   }
   inspect("apps/desktop/src");
-  inspect("packages/app-tests");
 });

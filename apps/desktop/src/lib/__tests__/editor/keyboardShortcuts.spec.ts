@@ -439,15 +439,14 @@ describe("saveShortcutSurface", () => {
     expect(saveShortcutSurface({})).toBe("none");
   });
 
-  // The plugin center and driver store also replace the content area while the
-  // previously active query tab stays active, so the active tab alone used to
-  // send Ctrl+S down the save-SQL branch (#13020).
-  it("does nothing while the plugin center or driver store is open", () => {
-    expect(saveShortcutSurface({ pluginCenterOpen: true, activeTabMode: "query" })).toBe("none");
+  // The driver store also replaces the content area while the previously
+  // active query tab stays active, so the active tab alone used to send Ctrl+S
+  // down the save-SQL branch (#13020).
+  it("does nothing while the driver store is open", () => {
     expect(saveShortcutSurface({ driverStoreOpen: true, activeTabMode: "query" })).toBe("none");
   });
 
   it("prefers the settings page over the other browsing surfaces", () => {
-    expect(saveShortcutSurface({ settingsPageOpen: true, pluginCenterOpen: true, driverStoreOpen: true, activeTabMode: "query" })).toBe("settings");
+    expect(saveShortcutSurface({ settingsPageOpen: true, driverStoreOpen: true, activeTabMode: "query" })).toBe("settings");
   });
 });

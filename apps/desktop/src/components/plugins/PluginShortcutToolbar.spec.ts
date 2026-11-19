@@ -142,7 +142,7 @@ describe("floating plugin shortcuts", () => {
     expect(host.querySelector("nav")).not.toBeNull();
     expect(document.querySelector("[data-plugin-shortcut-overflow]")).toBeNull();
   });
-  it("shows all shortcuts beside Plugin Center regardless of the floating icon count", async () => {
+  it("shows all shortcuts in the dropdown regardless of the floating icon count", async () => {
     dropdownOnly.value = true;
     mocks.state.editorSettings.pluginShortcuts.toolbarCount = 10;
     await flush();
@@ -155,9 +155,9 @@ describe("floating plugin shortcuts", () => {
     await flush();
     expect(document.querySelector("[data-plugin-shortcut-overflow]")).toBeNull();
   });
-  it("sorts within the Plugin Center dropdown and retains unavailable entry positions", async () => {
+  it("sorts within the dropdown and retains unavailable entry positions", async () => {
     dropdownOnly.value = true;
-    mocks.state.editorSettings.pluginShortcuts.position = "plugin-center";
+    mocks.state.editorSettings.pluginShortcuts.position = "sidebar-bottom";
     mocks.state.editorSettings.pluginShortcuts.order = ["a", "hidden", "b", "c", "d", "e"];
     await openMenu();
     const root = host.querySelector<HTMLElement>("[data-plugin-shortcut-toolbar]")!;
@@ -172,7 +172,7 @@ describe("floating plugin shortcuts", () => {
     pointer(window, "pointermove", 20, 41);
     pointer(window, "pointerup", 20, 41);
     await flush();
-    expect(mocks.save).toHaveBeenCalledWith({ pluginShortcuts: expect.objectContaining({ position: "plugin-center", order: ["c", "hidden", "a", "b", "d", "e"] }) });
+    expect(mocks.save).toHaveBeenCalledWith({ pluginShortcuts: expect.objectContaining({ position: "sidebar-bottom", order: ["c", "hidden", "a", "b", "d", "e"] }) });
     expect(mocks.open).not.toHaveBeenCalled();
   });
 

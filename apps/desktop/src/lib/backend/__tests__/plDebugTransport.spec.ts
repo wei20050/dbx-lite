@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({ desktop: false, invoke: vi.fn(), log: vi.fn() 
 vi.mock("@/lib/backend/tauriRuntime", () => ({ isTauriRuntime: () => mocks.desktop }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke, Channel: class {} }));
 vi.mock("@/lib/backend/debugLog", () => ({ appendDebugLog: mocks.log, isDebugLoggingEnabled: () => true }));
-vi.mock("@/lib/app/updatePreparation", () => ({ assertUpdateAllowsCommand: vi.fn() }));
 
 const reference = { serverEpoch: "epoch", sessionId: "session", connectionId: "conn", clientSessionId: "editor" };
 const inspect = { connectionId: "conn", database: "APP", clientSessionId: "editor", target: { objectType: "FUNCTION" as const, objectName: "Exact.Name", schema: " Mixed Owner ", packageName: "Quoted.Package" } };

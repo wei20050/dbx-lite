@@ -12,3 +12,16 @@ package calls and adds shared desktop/Web session ownership and lifecycle handli
 
 These contributions are distributed under the Apache License, Version 2.0.
 See LICENSE.
+
+This product includes software developed by the DBX project
+(https://github.com/t8y2/dbx), licensed under the Apache License, Version 2.0.
+
+Modifications Copyright 2026 weiyaoxi.
+
+This repository is a modified fork of DBX. Changes include removing upstream
+branding, promotional content, community links, and official distribution
+channels from the documentation. See the repository history for the full list
+of changes.
+
+The original and modified work are distributed under the Apache License,
+Version 2.0. See LICENSE.

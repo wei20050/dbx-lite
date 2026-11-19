@@ -73,7 +73,7 @@ function mountBar(
   activeTabId: string | null,
   activePinia: ReturnType<typeof createPinia>,
   onActivateTab?: (tabId: string) => void,
-  specialPageTabs?: { settingsOpen: boolean; settingsActive: boolean; driverStoreOpen: boolean; driverStoreActive: boolean; pluginCenterOpen: boolean; pluginCenterActive: boolean; driverUpdateCount: number },
+  specialPageTabs?: { settingsOpen: boolean; settingsActive: boolean; driverStoreOpen: boolean; driverStoreActive: boolean; driverUpdateCount: number },
   toolbarActions?: EditorToolbarActions,
   onSaveAllTabs?: () => void,
   extraProps: Record<string, unknown> = {},
@@ -102,7 +102,6 @@ function mountBar(
       locale: "en",
       messages: {
         en: {
-          toolbar: { pluginCenter: "Plugin Center" },
           common: { close: "Close" },
           connectionGroup: { ungroupedLabel: "Ungrouped" },
           tabs: {
@@ -404,29 +403,6 @@ describe("EditorGroupTabBar behavior", () => {
     expect(host.querySelector("[data-plugin-title-tooltip]")).toBeNull();
     expect(host.querySelector<HTMLElement>(".tooltip-content-stub")?.textContent).toContain("SSH server");
     expect(host.querySelector<HTMLElement>(".tooltip-content-stub")?.textContent).not.toContain("Database:");
-
-    app.unmount();
-    host.remove();
-  });
-
-  it("uses the DBX tooltip for the Plugin Center tab", async () => {
-    const store = useQueryStore();
-    const mainGroup = store.groups[0];
-    const specialPageTabs = { settingsOpen: false, settingsActive: false, driverStoreOpen: false, driverStoreActive: false, pluginCenterOpen: true, pluginCenterActive: true, driverUpdateCount: 0 };
-    const { app, host } = mountBar(mainGroup.id, [], null, pinia, undefined, specialPageTabs);
-    await settle();
-
-    const tab = host.querySelector<HTMLElement>("[data-plugin-center-tab]")!;
-    expect(tab.getAttribute("title")).toBeNull();
-
-    tab.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-    await settle();
-    expect(host.querySelector<HTMLElement>(".tooltip-stub")?.dataset.open).toBe("true");
-    expect(host.querySelector<HTMLElement>(".tooltip-content-stub")?.textContent?.trim()).toBe("Plugin Center");
-
-    tab.dispatchEvent(new MouseEvent("mouseleave"));
-    await settle();
-    expect(host.querySelector<HTMLElement>(".tooltip-stub")?.dataset.open).toBe("false");
 
     app.unmount();
     host.remove();
@@ -970,7 +946,7 @@ describe("EditorGroupTabBar behavior", () => {
 });
 
 describe("active tab reveal scrolling (issue #12010)", () => {
-  // The Settings / Driver Manager / Plugin Center tabs live in the same
+  // The Settings / Driver Manager tabs live in the same
   // scrollable row as regular query tabs. Centering every newly activated tab
   // re-centered tabs that were already fully visible, which shoved those
   // trailing special tabs out of the viewport as soon as the user switched back

@@ -1171,7 +1171,7 @@ export function evaluateMongoWriteSafety(command: MongoWriteCommand, options: Mo
   if (!options.allowWrites) {
     return {
       allowed: false,
-      reason: "MCP MongoDB execution is read-only under the current DBX policy.",
+      reason: "MongoDB execution is read-only under the current DBX policy.",
     };
   }
   const filter = mongoWriteFilter(command);
@@ -1179,7 +1179,7 @@ export function evaluateMongoWriteSafety(command: MongoWriteCommand, options: Mo
   if (!options.allowDangerous && highRisk) {
     return {
       allowed: false,
-      reason: `MongoDB ${command.kind} requires high-risk operations to be enabled in DBX MCP settings.`,
+      reason: `MongoDB ${command.kind} requires high-risk operations to be enabled in DBX AI settings.`,
     };
   }
   return { allowed: true };
@@ -1206,13 +1206,13 @@ export function evaluateMongoAggregateSafety(command: MongoAggregateCommand, opt
   if (!options.allowWrites) {
     return {
       allowed: false,
-      reason: `MongoDB aggregate stage "${writeStage}" is blocked by the current DBX MCP read-only policy.`,
+      reason: `MongoDB aggregate stage "${writeStage}" is blocked by the current DBX read-only policy.`,
     };
   }
   if (!options.allowDangerous) {
     return {
       allowed: false,
-      reason: `MongoDB aggregate stage "${writeStage}" requires high-risk operations to be enabled in DBX MCP settings.`,
+      reason: `MongoDB aggregate stage "${writeStage}" requires high-risk operations to be enabled in DBX AI settings.`,
     };
   }
   return { allowed: true };

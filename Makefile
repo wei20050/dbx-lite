@@ -3,7 +3,7 @@
 PNPM ?= pnpm
 TAURI_DEV_PORT ?= 1420
 
-.PHONY: help install docs-install check-tauri-dev-port dev dev-fast dev-web dev-backend build package clean docs docs-build check test cargo-check-fast cargo-test-fast db db-list db-verify db-down db-reset db-check db-completion
+.PHONY: help install check-tauri-dev-port dev dev-fast build package clean check test cargo-check-fast cargo-test-fast db db-list db-verify db-down db-reset db-check db-completion
 
 export DB
 export DB_VERSION
@@ -16,9 +16,6 @@ export CONFIRM
 node_modules/.modules.yaml: package.json pnpm-lock.yaml
 	$(PNPM) install --frozen-lockfile
 
-docs/node_modules/.modules.yaml: docs/package.json docs/pnpm-lock.yaml docs/pnpm-workspace.yaml $(wildcard docs/patches/*.patch)
-	cd docs && $(PNPM) install --frozen-lockfile
-
 help:
 	@printf '%s\n' 'DBX development targets:'
 	@printf '%s\n' ''
@@ -26,16 +23,9 @@ help:
 	@printf '  %-23s %s\n' 'make' 'Start the local desktop development environment'
 	@printf '  %-23s %s\n' 'make dev' 'Start the local desktop development environment'
 	@printf '  %-23s %s\n' 'make dev-fast' 'Start lightweight Tauri dev with DuckDB sidecar support'
-	@printf '  %-23s %s\n' 'make dev-web' 'Start the web frontend development server'
-	@printf '  %-23s %s\n' 'make dev-backend' 'Start the web backend development server'
 	@printf '  %-23s %s\n' 'make build' 'Run type checks and build the desktop frontend'
 	@printf '  %-23s %s\n' 'make package' 'Build the desktop app package'
 	@printf '  %-23s %s\n' 'make clean' 'Remove local Rust build artifacts and caches'
-	@printf '%s\n' ''
-	@printf '%s\n' 'Docs:'
-	@printf '  %-23s %s\n' 'make docs' 'Start the documentation site development server'
-	@printf '  %-23s %s\n' 'make docs-build' 'Build the documentation site'
-	@printf '  %-23s %s\n' 'make docs-install' 'Install documentation site dependencies'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Checks:'
 	@printf '  %-23s %s\n' 'make check' 'Run project checks'
@@ -58,9 +48,6 @@ help:
 install:
 	$(PNPM) install --frozen-lockfile
 
-docs-install:
-	cd docs && $(PNPM) install --frozen-lockfile
-
 ifeq ($(OS),Windows_NT)
 check-tauri-dev-port:
 	@powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort $(TAURI_DEV_PORT) -State Listen -ErrorAction SilentlyContinue) { Write-Host 'Port $(TAURI_DEV_PORT) is already in use. DBX Tauri dev requires http://localhost:$(TAURI_DEV_PORT).'; Write-Host ''; Get-NetTCPConnection -LocalPort $(TAURI_DEV_PORT) -State Listen -ErrorAction SilentlyContinue | Format-Table LocalAddress,LocalPort,OwningProcess -AutoSize; Write-Host 'Stop the process above, then run make dev again.'; exit 1 }"
@@ -82,13 +69,7 @@ dev: node_modules/.modules.yaml check-tauri-dev-port
 dev-fast: node_modules/.modules.yaml check-tauri-dev-port
 	# os-keyring must stay in sync with src-tauri defaults: without it the keychain
 	# key is unreadable and the secret-store migration wizard reappears on every launch.
-	RUST_MIN_STACK=16777216 $(PNPM) dev:tauri -- --no-default-features --features duckdb-sidecar,dynamodb,sqlite-bundled,os-keyring,sqlserver-native-attention
-
-dev-web: node_modules/.modules.yaml
-	$(PNPM) dev:web
-
-dev-backend: node_modules/.modules.yaml
-	$(PNPM) dev:backend
+	RUST_MIN_STACK=16777216 $(PNPM) dev:tauri -- --no-default-features --features sqlite-bundled,os-keyring,sqlserver-native-attention
 
 build: node_modules/.modules.yaml
 	$(PNPM) build:checked
@@ -98,12 +79,6 @@ package: node_modules/.modules.yaml
 
 clean:
 	cargo clean
-
-docs: docs/node_modules/.modules.yaml
-	cd docs && ./node_modules/.bin/next dev --hostname 127.0.0.1
-
-docs-build: docs/node_modules/.modules.yaml
-	cd docs && ./node_modules/.bin/next build && node scripts/generate-sitemap.mjs
 
 check: node_modules/.modules.yaml
 	$(PNPM) check

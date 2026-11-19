@@ -57,12 +57,11 @@ function harness(tabs: QueryTab[], reuseMode: DataTabReuseMode = "active-tab") {
     openTableStructure: vi.fn(),
   });
   const showSettingsPage = ref(false),
-    showDriverStore = ref(false),
-    showPluginCenter = ref(false);
+    showDriverStore = ref(false);
   const activateQueryTab = vi.fn((id: string) => {
     if (!queryStore.tabs.some((tab) => tab.id === id)) return false;
     queryStore.activeTabId = id;
-    showSettingsPage.value = showDriverStore.value = showPluginCenter.value = false;
+    showSettingsPage.value = showDriverStore.value = false;
     return true;
   });
   const openObjectBrowserTableTarget = vi.fn(async (target: NavigationTarget, options: NavigationOpenOptions = {}) => {
@@ -86,21 +85,15 @@ function harness(tabs: QueryTab[], reuseMode: DataTabReuseMode = "active-tab") {
     sourceNavigationIdentity: new Map(),
     showSettingsPage,
     showDriverStore,
-    showPluginCenter,
     settingsPageTabOpen: ref(true),
     driverStoreTabOpen: ref(true),
-    pluginCenterTabOpen: ref(true),
     activateSettingsPage: () => {
       showSettingsPage.value = true;
-      showDriverStore.value = showPluginCenter.value = false;
+      showDriverStore.value = false;
     },
     openDriverStorePage: () => {
       showDriverStore.value = true;
-      showSettingsPage.value = showPluginCenter.value = false;
-    },
-    openPluginCenterPage: () => {
-      showPluginCenter.value = true;
-      showSettingsPage.value = showDriverStore.value = false;
+      showSettingsPage.value = false;
     },
     activateQueryTab,
     openObjectBrowserTableTarget,
@@ -197,7 +190,7 @@ describe("App navigation restore regressions", () => {
     expect(h.queryStore.activeTabId).toBe("other");
   });
 
-  it.each(["showSettingsPage", "showDriverStore", "showPluginCenter"] as const)("leaves %s when the underlying active tab is restored", async (surface) => {
+  it.each(["showSettingsPage"] as const)("leaves %s when the underlying active tab is restored", async (surface) => {
     const h = harness([dataTab("same", "a")]);
     const target = h.currentGlobalNavigationEntry();
     h[surface].value = true;

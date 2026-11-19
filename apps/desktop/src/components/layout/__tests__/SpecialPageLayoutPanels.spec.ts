@@ -6,13 +6,12 @@ describe("Special page layout and right sidebar panels visibility", () => {
   it("shows editor content and hides right panels when a special page is active", () => {
     const isDetachedWindowContext = false;
     const driverStoreActive = ref(false);
-    const pluginCenterActive = ref(false);
     const settingsPageActive = ref(false);
     const isAiPanelMaximized = ref(false);
     const isHistoryPanelMaximized = ref(true);
     const isZenMode = ref(false);
 
-    const isSpecialPageActive = computed(() => !isDetachedWindowContext && (driverStoreActive.value || pluginCenterActive.value || settingsPageActive.value));
+    const isSpecialPageActive = computed(() => !isDetachedWindowContext && (driverStoreActive.value || settingsPageActive.value));
 
     const showEditorContent = computed(() => isSpecialPageActive.value || (!isAiPanelMaximized.value && !isHistoryPanelMaximized.value) || isZenMode.value);
 

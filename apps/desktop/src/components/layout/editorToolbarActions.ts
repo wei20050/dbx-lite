@@ -15,8 +15,6 @@ export interface SpecialPageTabsState {
   settingsActive: boolean;
   driverStoreOpen: boolean;
   driverStoreActive: boolean;
-  pluginCenterOpen: boolean;
-  pluginCenterActive: boolean;
   driverUpdateCount: number;
 }
 
@@ -60,8 +58,6 @@ export interface EditorToolbarActions {
   closeSettingsPage(): void;
   activateDriverStore(): void;
   closeDriverStore(): void;
-  activatePluginCenter(): void;
-  closePluginCenter(): void;
 }
 
 export const EDITOR_TOOLBAR_ACTIONS: InjectionKey<EditorToolbarActions> = Symbol("dbx:editor-toolbar-actions");
@@ -76,7 +72,7 @@ export function createNoopEditorToolbarActions(): EditorToolbarActions {
   const mode = { value: "explain" } as Ref<"explain" | "autotrace">;
   const flag = { value: true } as Ref<boolean>;
   const specialPageTabs = {
-    value: { settingsOpen: false, settingsActive: false, driverStoreOpen: false, driverStoreActive: false, pluginCenterOpen: false, pluginCenterActive: false, driverUpdateCount: 0 },
+    value: { settingsOpen: false, settingsActive: false, driverStoreOpen: false, driverStoreActive: false, driverUpdateCount: 0 },
   } as Ref<SpecialPageTabsState>;
   return {
     canNewQuery: { value: false } as Ref<boolean>,
@@ -113,7 +109,5 @@ export function createNoopEditorToolbarActions(): EditorToolbarActions {
     closeSettingsPage: noop,
     activateDriverStore: noop,
     closeDriverStore: noop,
-    activatePluginCenter: noop,
-    closePluginCenter: noop,
   };
 }

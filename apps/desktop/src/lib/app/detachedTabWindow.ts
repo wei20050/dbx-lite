@@ -1,4 +1,3 @@
-import { assertUpdateAllowsInteraction, beginUpdateSensitiveOperation } from "@/lib/app/updatePreparation";
 import { detachedWindowLabel, detachedWindowUrl } from "@/lib/app/windowContext";
 import { pinDetachedWindowIfMainPinned } from "@/lib/app/windowAlwaysOnTop";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
@@ -21,9 +20,7 @@ function errorMessage(error: unknown): string {
 
 export async function openDetachedTabWindow(tabId: string, title: string, position?: DetachedWindowOpenPosition): Promise<DetachedWindowOpenResult> {
   if (!isTauriRuntime()) return { opened: false, error: "Detached windows are only available in the desktop app." };
-  let finishOperation: (() => void) | undefined;
   try {
-    finishOperation = beginUpdateSensitiveOperation();
     const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
     const label = detachedWindowLabel(tabId);
     const existing = await WebviewWindow.getByLabel(label);
@@ -34,7 +31,6 @@ export async function openDetachedTabWindow(tabId: string, title: string, positi
       return { opened: true };
     }
 
-    assertUpdateAllowsInteraction();
     const child = new WebviewWindow(label, {
       url: detachedWindowUrl(tabId),
       title,
@@ -48,9 +44,6 @@ export async function openDetachedTabWindow(tabId: string, title: string, positi
       center: false,
     });
 
-    // A caller timeout does not prove native window creation has stopped.
-    // Keep this second reservation until a native terminal event arrives.
-    const finishNativeCreation = beginUpdateSensitiveOperation();
     return await new Promise((resolve) => {
       let settled = false;
       let timedOut = false;
@@ -66,10 +59,7 @@ export async function openDetachedTabWindow(tabId: string, title: string, positi
           try {
             // The caller already restored its tab; never surface a duplicate.
             await child.destroy();
-            finishNativeCreation();
           } catch (error) {
-            // Keep the reservation if removal is uncertain, rather than
-            // allowing restart to race a still-initializing webview.
             console.error("[DBX][detached-tab:late-create:close-error]", error);
           }
           return;
@@ -85,15 +75,12 @@ export async function openDetachedTabWindow(tabId: string, title: string, positi
           finish({ opened: true });
         } catch (error) {
           finish({ opened: false, error: errorMessage(error) });
-        } finally {
-          finishNativeCreation();
         }
       });
       void child.once("tauri://error", (event) => {
         const error = errorMessage(event?.payload);
         console.error("[DBX][detached-tab:create:error]", error);
         finish({ opened: false, error });
-        finishNativeCreation();
       });
       timeout = setTimeout(() => {
         timedOut = true;
@@ -104,7 +91,5 @@ export async function openDetachedTabWindow(tabId: string, title: string, positi
     const message = errorMessage(error);
     console.error("[DBX][detached-tab:create:error]", error);
     return { opened: false, error: message };
-  } finally {
-    finishOperation?.();
   }
 }

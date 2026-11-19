@@ -7,7 +7,6 @@ import { SETTINGS_SEARCH_DEFINITIONS, createShortcutSettingsSearchDefinitions, r
 import en from "@/i18n/locales/en";
 import zhCN from "@/i18n/locales/zh-CN";
 import { SHORTCUT_DEFINITIONS } from "@/lib/editor/shortcutRegistry";
-import { MCP_TOOL_OPTIONS } from "@/lib/mcp/mcpPolicySelection";
 import { SQL_VARIABLE_SYNTAX_KEYS } from "@/lib/sql/sqlVariableSyntax";
 import { APP_CUSTOM_UI_COLOR_DEFS } from "@/lib/app/appTheme";
 
@@ -24,14 +23,10 @@ function relativePosix(file: string): string {
 const excludedComponents: Record<string, string> = {
   DangerConfirmDialog: "Confirmation of an operation, not a configuration form",
   CloudSyncSelectionDialog: "Per-operation conflict/import selection, not sync configuration",
-  ChangelogPanel: "Release notes, not settings",
   ConnectionGroupBadge: "Decorative connection group indicator",
 };
 const excludedLabels: Record<string, string> = {
   "settings.syncSavedPassword": "Saved-credential status, not an editable field",
-  "settings.mcpUpdateCommand": "Read-only installation command",
-  "settings.mcpInstallCommand": "Read-only installation command",
-  "settings.mcpUninstallCommand": "Read-only removal command",
   "settings.updateStatusTitle": "Installed/available release status",
   "auth.logout": "Session action, not a preference",
   "settings.sqlShortcutsPreview": "Read-only generated SQL preview",
@@ -59,18 +54,14 @@ const auditedNonLiteralLabels: Record<string, string> = {
   "t(definition.labelKey)": "SHORTCUT_DEFINITIONS tested below",
   "t(def.labelKey)": "APP_CUSTOM_UI_COLOR_DEFS tested below",
   "getToolbarVisibilityItemLabel(item)": "Toolbar controls and index share TOOLBAR_VISIBILITY_ITEMS",
-  "t(tool.labelKey)": "MCP_TOOL_OPTIONS tested below",
   "t(`settings.${titleKey}`) t(option.labelKey)": "Formatter rule titles and option labels derived from the SFC below",
   "t(`settings.${titleKey}`)": "Formatter rule titles derived from the SFC below",
   "t(`settings.${titleKey}`) t(`settings.sqlFormatterRule_${value}`)": "Formatter rule titles and enum labels derived from the SFC below",
   database: "User-owned database names must never enter the static search index",
-  name: "Discovered database names in McpDatabaseAccessDialog are user data",
-  value: "Discovered plugin scope values in McpPluginScopeEditor are user data",
   Authentication: "Static AI protocol alias tested below",
   Endpoint: "Static AI protocol alias tested below",
   API: "Static AI protocol alias tested below",
   aiCredentialLabel: "Static Auth Token / API Key aliases tested below",
-  "Bearer Token": "Static MCP protocol alias tested below",
 };
 const unauditedLabels: string[] = [];
 
@@ -164,8 +155,6 @@ describe("settings search template coverage", () => {
       expect.arrayContaining([
         "components/backup/DatabaseBackupConfigFields.vue",
         "components/connection/TunnelProfileManager.vue",
-        "components/settings/McpAccessTree.vue",
-        "components/settings/McpCapabilityBrowser.vue",
         "components/editor/SqlFormatterSettingsPanel.vue",
         "components/grid/DataGridTypeColorSchemeDialog.vue",
       ]),
@@ -180,15 +169,13 @@ describe("settings search template coverage", () => {
   it("covers loop-generated custom UI colors from the canonical definitions", () => {
     expect(APP_CUSTOM_UI_COLOR_DEFS.map((item) => item.labelKey).filter((key) => !indexedKeys.has(key))).toEqual([]);
   });
-  it("covers loop-generated SQL syntax and MCP tools from their canonical definitions", () => {
-    const keys = [...SQL_VARIABLE_SYNTAX_KEYS.map((key) => `settings.sqlVariableSyntax_${key}`), ...MCP_TOOL_OPTIONS.map((tool) => tool.labelKey)];
+  it("covers loop-generated SQL syntax from its canonical definition", () => {
+    const keys = SQL_VARIABLE_SYNTAX_KEYS.map((key) => `settings.sqlVariableSyntax_${key}`);
     expect(keys.filter((key) => !indexedKeys.has(key))).toEqual([]);
   });
   it("resolves every fixed search anchor in the settings component tree", () => {
     const sources = [...controls.keys()].map((file) => parse(readFileSync(resolve(src, file), "utf8")).descriptor.template?.content ?? "");
     const anchors = new Set(sources.flatMap((source) => [...source.matchAll(/data-settings-search-id="([^"`]+)"/g)].map((match) => match[1])));
-    // Authorization tabs generate their anchors from the same four section IDs.
-    for (const section of ["overrides", "connections", "databases", "capabilities"]) anchors.add(`mcp-${section}`);
     expect(definitions.filter((definition) => !anchors.has(definition.targetId ?? definition.category)).map((definition) => definition.id)).toEqual([]);
   });
   it("uses unique result IDs, including canonical shortcut entries", () => {
@@ -210,22 +197,6 @@ describe("settings search localization coverage", () => {
     it(`resolves every indexed translation key in ${locale}`, () => {
       const missing = [...indexedKeys].filter((key) => !key || typeof messageAt(messages, key) !== "string");
       expect(missing).toEqual([]);
-    });
-    it(`finds MCP scope choices and custom tool rules with their authorization routes in ${locale}`, () => {
-      for (const isWeb of [false, true]) {
-        const entries = resolveSettingsSearchEntries(definitions, { isWeb, visibleCategories: new Set(categories) }, (key) => String(messageAt(messages, key) ?? key), categoryLabels);
-        for (const key of ["mcpResourceScopeTitle", "mcpScopeModeAll", "mcpResourceScopeModeCustom"]) {
-          const results = searchSettings(entries, String(messageAt(messages, `settings.${key}`)), locale, Infinity);
-          expect(results).toEqual(expect.arrayContaining([expect.objectContaining({ targetId: "mcp-connections", route: { mcpManagementTab: "permissions" } })]));
-        }
-        for (const key of ["mcpDatabaseScopeAriaLabel", "mcpDatabaseScopeAllTitle", "mcpDatabaseScopeSelectedTitle", "mcpDatabaseScopeNoneTitle"]) {
-          const results = searchSettings(entries, String(messageAt(messages, `settings.${key}`)), locale, Infinity);
-          expect(results).toEqual(expect.arrayContaining([expect.objectContaining({ targetId: "mcp-connections", route: { mcpManagementTab: "permissions" } })]));
-        }
-        for (const query of [locale === "zh-CN" ? "通配符" : "wildcard", "dbx_ssh__*"]) {
-          expect(searchSettings(entries, query, locale, Infinity)).toEqual(expect.arrayContaining([expect.objectContaining({ targetId: "mcp-capabilities", route: { mcpManagementTab: "capabilities", mcpCapabilityTarget: { kind: "advanced" } } })]));
-        }
-      }
     });
     it(`finds every visible title and keyword in ${locale} on both platforms`, () => {
       for (const isWeb of [false, true]) {
@@ -261,7 +232,6 @@ describe("settings search localization coverage", () => {
     for (const label of ["Authentication", "Endpoint", "API", "Auth Token", "API Key"]) {
       expect(searchSettings(entries, label, "en", Infinity).map((entry) => entry.id)).toContain("ai-config");
     }
-    expect(searchSettings(entries, "Bearer Token", "en", Infinity).some((entry) => entry.category === "mcp")).toBe(true);
   });
 });
 

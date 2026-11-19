@@ -20,7 +20,6 @@ import {
   normalizeAiConfig,
   normalizeDesktopSettings,
   normalizeEditorSettings,
-  normalizeMcpGlobalPolicy,
   type RightSidebarPanelState,
   transitionRightSidebarPanels,
   WELCOME_PAGE_DEFAULT_VERSION,
@@ -659,7 +658,6 @@ describe("normalizeEditorSettings", () => {
     expect(normalizeEditorSettings({ updateNotificationsEnabled: false }).autoUpdateApp).toBe(false);
     expect(normalizeEditorSettings({ updateNotificationsEnabled: false }).autoUpdateDrivers).toBe(false);
     expect(normalizeEditorSettings({ updateNotificationsEnabled: false }).autoUpdateJdbc).toBe(false);
-    expect(normalizeEditorSettings({ updateNotificationsEnabled: false }).autoUpdateMcp).toBe(false);
     expect(normalizeEditorSettings({ updateNotificationsEnabled: false }).autoUpdatePlugins).toBe(false);
     expect(normalizeEditorSettings({ autoUpdateApp: false }).autoDownloadUpdates).toBe(false);
   });
@@ -1126,132 +1124,6 @@ describe("normalizeDesktopSettings", () => {
     expect(normalizeDesktopSettings({}).custom_ai_skill_auto_enabled).toBe(false);
     expect(normalizeDesktopSettings({ custom_ai_skill_auto_enabled: null }).custom_ai_skill_auto_enabled).toBe(false);
     expect(normalizeDesktopSettings({ custom_ai_skill_auto_enabled: true }).custom_ai_skill_auto_enabled).toBe(true);
-  });
-});
-
-describe("normalizeMcpGlobalPolicy", () => {
-  it("defaults to all connections with writes allowed", () => {
-    expect(normalizeMcpGlobalPolicy(undefined)).toEqual({
-      readOnly: false,
-      allowDangerousSql: false,
-      promptHighRiskSql: false,
-      allowedConnectionIds: null,
-      allowedGroupIds: [],
-      allowedToolNames: null,
-      connectionPolicies: [],
-      groupPolicies: [],
-      configured: false,
-      queryTimeoutSecs: null,
-      pluginToolsMode: "flat",
-    });
-  });
-
-  it.each(["auto", "flat", "lazy"] as const)("preserves the saved %s plugin tool mode", (pluginToolsMode) => {
-    expect(normalizeMcpGlobalPolicy({ configured: true, pluginToolsMode }).pluginToolsMode).toBe(pluginToolsMode);
-  });
-
-  it("distinguishes a missing mode in legacy saved policies from a fresh configuration", () => {
-    expect(normalizeMcpGlobalPolicy({ configured: true }).pluginToolsMode).toBe("auto");
-    expect(normalizeMcpGlobalPolicy({ configured: false }).pluginToolsMode).toBe("flat");
-    expect(normalizeMcpGlobalPolicy(null).pluginToolsMode).toBe("flat");
-  });
-
-  it("normalizes and deduplicates an explicit connection allowlist", () => {
-    expect(
-      normalizeMcpGlobalPolicy({
-        readOnly: true,
-        allowDangerousSql: true,
-        allowedConnectionIds: [" connection-1 ", "connection-1", "", "connection-2"],
-        configured: true,
-      }),
-    ).toEqual({
-      readOnly: true,
-      allowDangerousSql: true,
-      promptHighRiskSql: false,
-      allowedConnectionIds: ["connection-1", "connection-2"],
-      allowedGroupIds: [],
-      allowedToolNames: null,
-      connectionPolicies: [],
-      groupPolicies: [],
-      configured: true,
-      queryTimeoutSecs: null,
-      pluginToolsMode: "auto",
-    });
-  });
-
-  it("preserves an empty allowlist as deny all", () => {
-    expect(normalizeMcpGlobalPolicy({ allowedConnectionIds: [] }).allowedConnectionIds).toEqual([]);
-  });
-
-  it("enables high-risk SQL prompts only when explicitly configured", () => {
-    expect(normalizeMcpGlobalPolicy({ promptHighRiskSql: true, callConfirmation: "high_risk" })).toMatchObject({ promptHighRiskSql: false, callConfirmation: "high_risk" });
-    expect(normalizeMcpGlobalPolicy({ promptHighRiskSql: true, callConfirmation: "off" }).promptHighRiskSql).toBe(false);
-    expect(normalizeMcpGlobalPolicy({ promptHighRiskSql: false, callConfirmation: "full" }).promptHighRiskSql).toBe(true);
-    expect(normalizeMcpGlobalPolicy({ promptHighRiskSql: true }).promptHighRiskSql).toBe(true);
-    expect(normalizeMcpGlobalPolicy({ promptHighRiskSql: "true" } as any).promptHighRiskSql).toBe(false);
-  });
-
-  it("keeps only selected-database execution policies and normalizes their names", () => {
-    const policy = normalizeMcpGlobalPolicy({
-      connectionPolicies: [
-        {
-          connectionId: " connection-1 ",
-          readOnly: false,
-          allowDangerousSql: true,
-          executionModeConfigured: true,
-          executionModePolicyVersion: 1,
-          databaseScope: "selected",
-          allowedDatabases: [" reporting ", "operations"],
-          databasePolicies: [
-            { databaseName: " reporting ", readOnly: true, allowDangerousSql: true },
-            { databaseName: "outside-scope", readOnly: true, allowDangerousSql: false },
-          ],
-        },
-      ],
-    });
-
-    expect(policy.connectionPolicies[0]).toMatchObject({
-      connectionId: "connection-1",
-      executionModePolicyVersion: 1,
-      allowedDatabases: ["reporting", "operations"],
-      databasePolicies: [{ databaseName: "reporting", readOnly: true, allowDangerousSql: false }],
-    });
-  });
-
-  it("leaves legacy connection rules unmarked until the user edits execution permissions", () => {
-    const policy = normalizeMcpGlobalPolicy({
-      connectionPolicies: [
-        {
-          connectionId: "legacy",
-          readOnly: false,
-          allowDangerousSql: true,
-          executionModeConfigured: true,
-          databaseScope: "all",
-          allowedDatabases: [],
-          databasePolicies: [],
-        } as any,
-      ],
-    });
-
-    expect(policy.connectionPolicies[0].executionModePolicyVersion).toBeNull();
-  });
-
-  it("defaults the Salesforce DML opt-in to off and revokes it under read-only", () => {
-    // Policies saved before the switch existed carry no field at all.
-    expect(normalizeMcpGlobalPolicy({ connectionPolicies: [{ connectionId: "sfdc", databaseScope: "all" } as any] }).connectionPolicies[0].allowSalesforceDml).toBe(false);
-
-    expect(normalizeMcpGlobalPolicy({ connectionPolicies: [{ connectionId: "sfdc", allowSalesforceDml: true } as any] }).connectionPolicies[0].allowSalesforceDml).toBe(true);
-
-    expect(normalizeMcpGlobalPolicy({ connectionPolicies: [{ connectionId: "sfdc", readOnly: true, allowSalesforceDml: true } as any] }).connectionPolicies[0].allowSalesforceDml).toBe(false);
-
-    expect(normalizeMcpGlobalPolicy({ connectionPolicies: [{ connectionId: "sfdc", allowSalesforceDml: "yes" } as any] }).connectionPolicies[0].allowSalesforceDml).toBe(false);
-  });
-
-  it("round-trips queryTimeoutSecs null, undefined and positive numbers", () => {
-    expect(normalizeMcpGlobalPolicy({ queryTimeoutSecs: null }).queryTimeoutSecs).toBeNull();
-    expect(normalizeMcpGlobalPolicy({ queryTimeoutSecs: undefined } as any).queryTimeoutSecs).toBeNull();
-    expect(normalizeMcpGlobalPolicy({ queryTimeoutSecs: 0 }).queryTimeoutSecs).toBe(0);
-    expect(normalizeMcpGlobalPolicy({ queryTimeoutSecs: 300 }).queryTimeoutSecs).toBe(300);
   });
 });
 
@@ -1767,63 +1639,6 @@ describe("settingsStore AI API key normalization", () => {
       qoderCliPath: "~/.local/bin/qodercli",
       qoderCliEnv: { QODER_PERSONAL_ACCESS_TOKEN: "token", EMPTY: "" },
     });
-  });
-});
-
-describe("settingsStore MCP policy persistence", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    setActivePinia(createPinia());
-  });
-
-  it("rolls an optimistic policy update back when persistence fails", async () => {
-    let rejectSave!: (reason?: unknown) => void;
-    const saveMcpGlobalPolicy = vi.fn(
-      () =>
-        new Promise<void>((_resolve, reject) => {
-          rejectSave = reject;
-        }),
-    );
-    vi.doMock("@/lib/backend/api", () => ({ saveMcpGlobalPolicy }));
-
-    const { useSettingsStore } = await import("@/stores/settingsStore");
-    const store = useSettingsStore();
-    const previous = {
-      readOnly: true,
-      allowDangerousSql: false,
-      promptHighRiskSql: false,
-      allowedConnectionIds: ["connection-1"],
-      allowedGroupIds: [],
-      allowedToolNames: null,
-      connectionPolicies: [],
-      groupPolicies: [],
-      configured: true,
-      queryTimeoutSecs: null,
-      pluginToolsMode: "auto",
-    };
-    store.mcpGlobalPolicy = previous;
-
-    const update = store.updateMcpGlobalPolicy({
-      readOnly: false,
-      allowedConnectionIds: [],
-    });
-    expect(store.mcpGlobalPolicy).toEqual({
-      readOnly: false,
-      allowDangerousSql: false,
-      promptHighRiskSql: false,
-      allowedConnectionIds: [],
-      allowedGroupIds: [],
-      allowedToolNames: null,
-      connectionPolicies: [],
-      groupPolicies: [],
-      configured: true,
-      queryTimeoutSecs: null,
-      pluginToolsMode: "auto",
-    });
-
-    rejectSave(new Error("save failed"));
-    await expect(update).rejects.toThrow("save failed");
-    expect(store.mcpGlobalPolicy).toEqual(previous);
   });
 });
 

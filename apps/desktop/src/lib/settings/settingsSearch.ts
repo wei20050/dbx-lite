@@ -2,12 +2,10 @@ import type { ToolbarItemKey } from "@/lib/settings/toolbarCustomization";
 import { getPlatform } from "@/lib/backend/platform";
 import { SQL_VARIABLE_SYNTAX_KEYS, SQL_VARIABLE_SYNTAX_TOKENS } from "@/lib/sql/sqlVariableSyntax";
 import { APP_CUSTOM_UI_COLOR_DEFS } from "@/lib/app/appTheme";
-import { MCP_TOOL_OPTIONS, MCP_EXECUTION_MODE_COLUMNS } from "@/lib/mcp/mcpPolicySelection";
-import type { McpCapabilityNavigationTarget } from "@/lib/mcp/mcpCapabilitySearch";
 
-export type SettingsCategory = "editor" | "formatter" | "appearance" | "navigation" | "data" | "backups" | "tunnels" | "shortcuts" | "snippets" | "sync" | "ai" | "mcp" | "updates" | "security" | "about";
+export type SettingsCategory = "editor" | "formatter" | "appearance" | "navigation" | "data" | "backups" | "tunnels" | "shortcuts" | "snippets" | "sync" | "ai" | "security";
 
-const SETTINGS_CATEGORIES: readonly SettingsCategory[] = ["editor", "formatter", "appearance", "navigation", "data", "backups", "tunnels", "shortcuts", "snippets", "sync", "ai", "mcp", "updates", "security", "about"];
+const SETTINGS_CATEGORIES: readonly SettingsCategory[] = ["editor", "formatter", "appearance", "navigation", "data", "backups", "tunnels", "shortcuts", "snippets", "sync", "ai", "security"];
 
 /**
  * Maps retired settings tabs to their current home so saved links and external
@@ -58,9 +56,6 @@ export interface SettingsSearchEntry {
 
 export interface SettingsSearchRoute {
   syncMethodTab?: "webdav" | "snippet" | "local";
-  mcpManagementTab?: "access" | "permissions" | "capabilities";
-  mcpTransportTab?: "stdio" | "http";
-  mcpCapabilityTarget?: McpCapabilityNavigationTarget;
   formatterMode?: "form" | "json";
 }
 
@@ -84,24 +79,19 @@ export const TOOLBAR_VISIBILITY_ITEMS: readonly ToolbarVisibilityItem[] = [
   { key: "newQuery", titleKey: "toolbar.newQuery" },
   { key: "openSql", titleKey: "toolbar.openSql" },
   { key: "databaseBackups", titleKey: "databaseBackup.title" },
-  { key: "mcpSettings", titleKey: "settings.openMcpSettings" },
   { key: "exportProgress", titleKey: "settings.toolbarExportProgress" },
   { key: "settings", titleKey: "settings.title" },
   { key: "logout", titleKey: "auth.logout", webOnly: true },
 
   { key: "dataTransfer", titleKey: "transfer.dataTransfer" },
-  { key: "driverManager", titleKey: "toolbar.driverManager" },
-  { key: "pluginCenter", titleKey: "toolbar.pluginCenter" },
   { key: "sqlFile", titleKey: "sqlFile.title" },
   { key: "schemaDiff", titleKey: "diff.title" },
   { key: "dataCompare", titleKey: "dataCompare.title" },
-  { key: "checkUpdates", titleKey: "updates.check" },
   { key: "sqlLibrary", titleKey: "sqlLibrary.title" },
   { key: "sqlFileTree", titleKey: "sqlFileTree.title" },
   { key: "history", titleKey: "history.title" },
   { key: "ai", title: "AI" },
   { key: "theme", titleKey: "toolbar.theme" },
-  { key: "github", title: "GitHub" },
   { key: "alwaysOnTop", titleKey: "toolbar.alwaysOnTop", desktopOnly: true },
   { key: "immediateSync", titleKey: "toolbar.immediateSync" },
 ];
@@ -381,7 +371,6 @@ export const SETTINGS_SEARCH_DEFINITIONS: readonly SettingsSearchDefinition[] = 
   { id: "appearance-linux-floating-frame", category: "appearance", titleKey: "settings.linuxFloatingFrame", descriptionKey: "settings.linuxFloatingFrameDescription", targetId: "appearance", visible: (context) => !context.isWeb && getPlatform() === "linux" },
   { id: "appearance-tray", category: "appearance", titleKey: "settings.showTrayIcon", descriptionKey: "settings.showTrayIconDescription", targetId: "appearance", visible: desktopOnly },
   { id: "appearance-quit", category: "appearance", titleKey: "settings.quitOnClose", descriptionKey: "settings.quitOnCloseDescription", targetId: "appearance", visible: desktopOnly },
-  { id: "about-debug-logs", category: "about", titleKey: "settings.debugLoggingEnabled", descriptionKey: "settings.debugLoggingEnabledDescription", targetId: "about", visible: desktopOnly },
   { id: "navigation", category: "navigation", titleKey: "settings.navigationTab", targetId: "navigation" },
   { id: "navigation-column-double-click", category: "navigation", titleKey: "settings.sidebarColumnDoubleClickAction", descriptionKey: "settings.sidebarColumnDoubleClickDescription", targetId: "navigation" },
   { id: "navigation-sidebar", category: "navigation", titleKey: "settings.sidebarActivation", targetId: "navigation" },
@@ -430,7 +419,6 @@ export const SETTINGS_SEARCH_DEFINITIONS: readonly SettingsSearchDefinition[] = 
   { id: "navigation-sidebar-density", category: "navigation", titleKey: "settings.sidebarDensity", descriptionKey: "settings.sidebarDensityDescription", targetId: "navigation" },
   { id: "navigation-hidden-tables", category: "navigation", titleKey: "settings.sidebarHiddenTablePrefixes", descriptionKey: "settings.sidebarHiddenTablePrefixesDescription", targetId: "navigation" },
   { id: "history-retention", category: "data", titleKey: "settings.historyRetentionLimit", descriptionKey: "settings.historyRetentionDescription", targetId: "history-retention", keywordKeys: ["settings.historyRetentionUnlimited"] },
-  { id: "mcp-history-retention", category: "data", titleKey: "settings.mcpHistoryRetentionLimit", descriptionKey: "settings.mcpHistoryRetentionDescription", targetId: "mcp-history-retention", keywordKeys: ["settings.historyRetentionUnlimited", "settings.mcpHistoryCleanup"] },
   { id: "navigation-table-page-size", category: "navigation", titleKey: "settings.sidebarTablePageSize", descriptionKey: "settings.sidebarTablePageSizeDescription", targetId: "navigation" },
   {
     id: "navigation-disconnect-tabs",
@@ -765,18 +753,6 @@ export const SETTINGS_SEARCH_DEFINITIONS: readonly SettingsSearchDefinition[] = 
   { id: "ai-global-instructions", category: "ai", titleKey: "ai.globalInstructions", descriptionKey: "ai.globalInstructionsDescription", targetId: "ai" },
   { id: "ai-custom-skill-root", category: "ai", titleKey: "settings.aiSkillRoot", descriptionKey: "settings.aiSkillRootDesc", targetId: "ai", visible: desktopOnly },
   { id: "ai-skill-auto-enabled", category: "ai", titleKey: "settings.aiSkillAutoEnabled", descriptionKey: "settings.aiSkillAutoEnabledDesc", targetId: "ai", visible: desktopOnly },
-  { id: "mcp", category: "mcp", titleKey: "settings.mcpTitle", descriptionKey: "settings.mcpDescription", targetId: "mcp" },
-  { id: "mcp-bin-path", category: "mcp", titleKey: "settings.mcpBinPath", targetId: "mcp-stdio", route: { mcpManagementTab: "access", mcpTransportTab: "stdio" } },
-  {
-    id: "mcp-permissions",
-    category: "mcp",
-    titleKey: "settings.mcpExecutionMode",
-    descriptionKey: "settings.mcpExecutionModeDescription",
-    targetId: "mcp-overrides",
-    route: { mcpManagementTab: "permissions" },
-    keywordKeys: MCP_EXECUTION_MODE_COLUMNS.map((mode) => mode.labelKey),
-  },
-  { id: "mcp-config", category: "mcp", titleKey: "settings.mcpConfig", targetId: "mcp-client-config", route: { mcpManagementTab: "access", mcpTransportTab: "stdio" } },
   { id: "security", category: "security", titleKey: "settings.securityTab", targetId: "security", visible: webOnly },
   { id: "security-password", category: "security", titleKey: "auth.changePassword", targetId: "security", visible: webOnly, keywordKeys: ["auth.changePasswordDescription", "auth.oldPassword", "auth.newPassword", "auth.confirmPassword"] },
   {
@@ -788,16 +764,6 @@ export const SETTINGS_SEARCH_DEFINITIONS: readonly SettingsSearchDefinition[] = 
     visible: webOnly,
     keywordKeys: ["settings.webCaptchaAlways", "settings.webCaptchaAuto", "settings.webCaptchaOff"],
   },
-  { id: "about-support", category: "about", titleKey: "settings.supportInfoTitle", descriptionKey: "settings.supportInfoDescription", targetId: "about" },
-  { id: "about-transfer", category: "about", titleKey: "settings.settingsTransferTitle", descriptionKey: "settings.settingsTransferDescription", targetId: "about" },
-  { id: "updates-app", category: "updates", titleKey: "settings.autoUpdateApp", descriptionKey: "settings.autoUpdateAppDescription", targetId: "updates", keywordKeys: ["settings.autoUpdate"] },
-  { id: "updates-drivers", category: "updates", titleKey: "settings.autoUpdateDrivers", descriptionKey: "settings.autoUpdateDriversDescription", targetId: "updates" },
-  { id: "updates-jdbc", category: "updates", titleKey: "settings.autoUpdateJdbc", descriptionKey: "settings.autoUpdateJdbcDescription", targetId: "updates" },
-  { id: "updates-mcp", category: "updates", titleKey: "settings.autoUpdateMcp", descriptionKey: "settings.autoUpdateMcpDescription", targetId: "updates" },
-  { id: "updates-plugins", category: "updates", titleKey: "settings.autoUpdatePlugins", descriptionKey: "settings.autoUpdatePluginsDescription", targetId: "updates" },
-  { id: "updates-channel", category: "updates", titleKey: "settings.updateChannel", descriptionKey: "settings.updateChannelDescription", targetId: "updates", keywordKeys: ["settings.updateChannelStable", "settings.updateChannelBeta"] },
-  { id: "updates-source", category: "updates", titleKey: "settings.updateDownloadSource", descriptionKey: "settings.updateDownloadSourceDescription", targetId: "updates", keywordKeys: ["settings.updateDownloadSourceOfficial", "settings.updateDownloadSourceCnb"] },
-  // Fixed controls added alongside the full template coverage audit.
   { id: "editor-keep-explicit-transaction-in-auto-commit", category: "editor", titleKey: "settings.keepExplicitTransactionInAutoCommit", descriptionKey: "settings.keepExplicitTransactionInAutoCommitDescription", targetId: "editor" },
   { id: "editor-excluded-completion-items", category: "editor", titleKey: "settings.excludedCompletionItems", descriptionKey: "settings.excludedCompletionItemsDescription", targetId: "editor" },
   { id: "editor-select-first-completion-on-open", category: "editor", titleKey: "settings.selectFirstCompletionOnOpen", descriptionKey: "settings.selectFirstCompletionOnOpenDescription", targetId: "editor" },
@@ -898,125 +864,7 @@ export const SETTINGS_SEARCH_DEFINITIONS: readonly SettingsSearchDefinition[] = 
   { id: "sync-sync-snippet-include-secrets", category: "sync", titleKey: "settings.syncSnippetIncludeSecrets", targetId: "sync-snippet", route: { syncMethodTab: "snippet" }, visible: desktopOnly },
   { id: "sync-sync-snippet-restore-secrets", category: "sync", titleKey: "settings.syncSnippetRestoreSecrets", targetId: "sync-snippet", route: { syncMethodTab: "snippet" }, visible: desktopOnly },
   { id: "sync-sync-snippet-secrets-passphrase", category: "sync", titleKey: "settings.syncSnippetSecretsPassphrase", descriptionKey: "settings.syncSnippetSecretsPassphraseDescription", targetId: "sync-snippet", route: { syncMethodTab: "snippet" }, visible: desktopOnly },
-  { id: "mcp-http-service-title", category: "mcp", titleKey: "settings.mcpHttpServiceTitle", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly, keywordKeys: ["settings.mcpHttpServiceDescription"], keywordTexts: ["Bearer Token"] },
-  {
-    id: "mcp-http-remote-title",
-    category: "mcp",
-    titleKey: "settings.mcpHttpRemoteTitle",
-    targetId: "mcp-http",
-    route: { mcpManagementTab: "access", mcpTransportTab: "http" },
-    visible: desktopOnly,
-    keywordKeys: ["settings.mcpHttpRemoteHintPrefix", "settings.mcpHttpRemoteHintMiddle", "settings.mcpHttpRemoteHintSuffix"],
-  },
-  { id: "mcp-http-host-label", category: "mcp", titleKey: "settings.mcpHttpHostLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly },
-  { id: "mcp-http-port-label", category: "mcp", titleKey: "settings.mcpHttpPortLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly },
-  { id: "mcp-http-path-label", category: "mcp", titleKey: "settings.mcpHttpPathLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly },
-  {
-    id: "mcp-http-web-service-title",
-    category: "mcp",
-    titleKey: "settings.mcpHttpWebServiceTitle",
-    targetId: "mcp-http",
-    route: { mcpManagementTab: "access", mcpTransportTab: "http" },
-    visible: webOnly,
-    keywordKeys: ["settings.mcpHttpWebServiceDescription", "settings.mcpHttpEndpointLabel"],
-    keywordTexts: ["Bearer Token"],
-  },
-  { id: "mcp-http-web-enable-label", category: "mcp", titleKey: "settings.mcpHttpWebEnableLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: webOnly },
-  { id: "mcp-http-allowed-hosts-label", category: "mcp", titleKey: "settings.mcpHttpAllowedHostsLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, keywordKeys: ["settings.mcpHttpHostsHint"] },
-  {
-    id: "mcp-http-allowed-origins-label",
-    category: "mcp",
-    titleKey: "settings.mcpHttpAllowedOriginsLabel",
-    targetId: "mcp-http",
-    route: { mcpManagementTab: "access", mcpTransportTab: "http" },
-    keywordKeys: ["settings.mcpHttpWebOriginsHint", "settings.mcpHttpOriginsHintPrefix", "settings.mcpHttpOriginsHintSuffix"],
-  },
-  { id: "mcp-http-endpoint-label", category: "mcp", titleKey: "settings.mcpHttpEndpointLabel", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly },
-  { id: "mcp-http-client-config-title", category: "mcp", titleKey: "settings.mcpHttpClientConfigTitle", targetId: "mcp-http", route: { mcpManagementTab: "access", mcpTransportTab: "http" }, visible: desktopOnly },
-  { id: "mcp-query-timeout", category: "mcp", titleKey: "settings.mcpQueryTimeout", descriptionKey: "settings.mcpQueryTimeoutDescription", targetId: "mcp-query-timeout", route: { mcpManagementTab: "access" } },
-  {
-    id: "mcp-prompt-high-risk-sql",
-    category: "mcp",
-    titleKey: "settings.mcpCallSafety",
-    targetId: "mcp-call-safety",
-    route: { mcpManagementTab: "permissions" },
-    keywordKeys: ["settings.mcpCallSafetyConfirm", "settings.mcpExecutionModeDescription", "settings.mcpPermissionGlobalDefaultHint", "settings.mcpCapabilityTitle", "settings.mcpCapabilityDescription", "settings.mcpCapabilityOperation", "settings.mcpCapabilityAlwaysEnforced"],
-  },
-  {
-    id: "mcp-auth-tab-connections-title",
-    category: "mcp",
-    titleKey: "settings.mcpAuthTabConnectionsTitle",
-    targetId: "mcp-connections",
-    route: { mcpManagementTab: "permissions" },
-    keywordKeys: [
-      "settings.mcpAccessTreeScopeLabel",
-      "settings.mcpAccessTreeExceptionsOnly",
-      "settings.mcpAccessTreeColumnVisible",
-      "settings.mcpAccessTreeColumnSetting",
-      "settings.mcpConnectionPolicyAllowSalesforceDml",
-      "settings.mcpConnectionPolicyInherit",
-      "settings.mcpConnectionPolicyReadOnly",
-      "settings.mcpConnectionPolicySafeWrite",
-      "settings.mcpConnectionPolicyHighRiskWrite",
-      "settings.mcpResourceScopeTitle",
-      "settings.mcpScopeModeAll",
-      "settings.mcpResourceScopeModeCustom",
-    ],
-  },
-  {
-    id: "mcp-auth-tab-databases-title",
-    category: "mcp",
-    titleKey: "settings.mcpAuthTabDatabasesTitle",
-    targetId: "mcp-connections",
-    route: { mcpManagementTab: "permissions" },
-    keywordKeys: [
-      "settings.mcpConnectionPolicyInherit",
-      "settings.mcpConnectionPolicyReadOnly",
-      "settings.mcpConnectionPolicySafeWrite",
-      "settings.mcpConnectionPolicyHighRiskWrite",
-      "settings.mcpAccessTreeDatabases",
-      "settings.mcpDatabaseSearch",
-      "settings.mcpDatabaseSelectResults",
-      "settings.mcpDatabaseBatchLevel",
-      "settings.mcpAccessTreeManualDatabase",
-      "settings.mcpDatabaseScopeTitle",
-      "settings.mcpDatabaseScopeDescription",
-      "settings.mcpDatabaseScopeAriaLabel",
-      "settings.mcpDatabaseScopeAllTitle",
-      "settings.mcpDatabaseScopeAllDescription",
-      "settings.mcpDatabaseScopeSelectedTitle",
-      "settings.mcpDatabaseScopeSelectedDescription",
-      "settings.mcpDatabaseScopeNoneTitle",
-      "settings.mcpDatabaseScopeNoneDescription",
-    ],
-  },
-  {
-    id: "mcp-tool-permissions-title",
-    category: "mcp",
-    titleKey: "settings.mcpToolPermissionsTitle",
-    descriptionKey: "settings.mcpToolPermissionsDescription",
-    keywordKeys: ["settings.mcpBrowser.searchPlaceholder", "settings.mcpCapabilitiesOnlyEnabled", "settings.mcpBrowser.navigation", "settings.mcpCapabilitiesFilterLabel", "settings.mcpBrowser.builtin", "settings.mcpBrowser.plugins"],
-    targetId: "mcp-capabilities",
-    route: { mcpManagementTab: "capabilities" },
-  },
-  {
-    id: "mcp-custom-tool-entries",
-    category: "mcp",
-    titleKey: "settings.mcpPluginToolEntriesTitle",
-    keywordKeys: ["settings.mcpToolCustomPlaceholder", "settings.mcpToolCustomHint", "settings.mcpPluginToolEntriesHint"],
-    targetId: "mcp-capabilities",
-    route: { mcpManagementTab: "capabilities", mcpCapabilityTarget: { kind: "advanced" } },
-  },
-  { id: "mcp-permission-preview-title", category: "mcp", titleKey: "settings.mcpAccessTreeTitle", targetId: "mcp-connections", route: { mcpManagementTab: "permissions" } },
   { id: "backups-background-worker", category: "backups", titleKey: "databaseBackup.backgroundWorker", targetId: "backups", visible: desktopOnly },
-  ...MCP_TOOL_OPTIONS.map((tool): SettingsSearchDefinition => ({
-    id: `mcp-tool-${tool.name}`,
-    category: "mcp",
-    titleKey: tool.labelKey,
-    keywordTexts: [tool.name],
-    targetId: "mcp-capabilities",
-    route: { mcpManagementTab: "capabilities", mcpCapabilityTarget: { kind: "tool", toolName: tool.name } },
-  })),
 ];
 
 export function resolveSettingsSearchEntries(definitions: readonly SettingsSearchDefinition[], context: SettingsSearchContext, translate: Translate, categoryLabels: Readonly<Record<SettingsCategory, string>>): SettingsSearchEntry[] {

@@ -2632,7 +2632,6 @@ export const useSettingsStore = defineStore("settings", () => {
     ...DEFAULT_MCP_GLOBAL_POLICY,
   });
   const isDesktopSettingsLoaded = ref(false);
-  const isMcpGlobalPolicyLoaded = ref(false);
   const isEditorSettingsLoaded = ref(false);
   let initEditorSettingsPromise: Promise<void> | null = null;
   let initAiConfigsPromise: Promise<void> | null = null;
@@ -2860,39 +2859,7 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  async function initMcpGlobalPolicy(force = false) {
-    if (isMcpGlobalPolicyLoaded.value && !force) return;
-    mcpGlobalPolicy.value = normalizeMcpGlobalPolicy(await api.loadMcpGlobalPolicy());
-    isMcpGlobalPolicyLoaded.value = true;
-  }
 
-  async function updateMcpGlobalPolicy(partial: Partial<Omit<McpGlobalPolicy, "configured">>) {
-    const previous = mcpGlobalPolicy.value;
-    const next = normalizeMcpGlobalPolicy({
-      ...previous,
-      ...partial,
-      configured: true,
-    });
-    mcpGlobalPolicy.value = next;
-    try {
-      await api.saveMcpGlobalPolicy({
-        readOnly: next.readOnly,
-        allowDangerousSql: next.allowDangerousSql,
-        promptHighRiskSql: next.promptHighRiskSql,
-        ...(next.callConfirmation ? { callConfirmation: next.callConfirmation } : {}),
-        allowedConnectionIds: next.allowedConnectionIds,
-        allowedGroupIds: next.allowedGroupIds,
-        allowedToolNames: next.allowedToolNames,
-        connectionPolicies: next.connectionPolicies,
-        groupPolicies: next.groupPolicies,
-        queryTimeoutSecs: next.queryTimeoutSecs,
-        pluginToolsMode: next.pluginToolsMode,
-      });
-    } catch (error) {
-      mcpGlobalPolicy.value = previous;
-      throw error;
-    }
-  }
 
   async function initAiConfigs(): Promise<void> {
     if (isAiConfigLoaded.value) return;
@@ -3755,8 +3722,6 @@ export const useSettingsStore = defineStore("settings", () => {
     persistEditorSettings,
     initDesktopSettings,
     updateDesktopSettings,
-    initMcpGlobalPolicy,
-    updateMcpGlobalPolicy,
     updateColumnFormatter,
     rememberConnectionDatabases,
     rememberedDatabaseForConnection,

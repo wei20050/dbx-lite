@@ -70,11 +70,6 @@ pub async fn clear_history_by_source(
 }
 
 #[tauri::command]
-pub async fn cleanup_mcp_history_retention(state: State<'_, Arc<AppState>>) -> Result<u64, String> {
-    state.storage.cleanup_mcp_history_retention().await
-}
-
-#[tauri::command]
 pub async fn delete_history_entry(app: AppHandle, state: State<'_, Arc<AppState>>, id: String) -> Result<(), String> {
     state.storage.delete_history_entry(&id).await?;
     emit_history_changed(&app, "deleted");

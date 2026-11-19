@@ -46,15 +46,16 @@ describe("plugin shortcut settings", () => {
     await vi.waitFor(() => expect(mocks.toast).toHaveBeenCalled());
     expect(mocks.state.editorSettings.pluginShortcuts.showSettingsEntry).toBe(false);
   });
-  it("selects the Plugin Center dropdown and preserves unrelated preferences", async () => {
+  it("selects the toolbar dropdown and preserves unrelated preferences", async () => {
     const trigger = container.querySelector<HTMLElement>('[role="combobox"]')!;
     trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector('[role="option"]')).not.toBeNull());
-    const option = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find((item) => item.textContent?.includes("shortcutsPluginCenter"))!;
+    const option = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find((item) => item.textContent?.includes("shortcutsToolbar"))!;
     option.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
-    await vi.waitFor(() => expect(mocks.state.editorSettings.pluginShortcuts.position).toBe("plugin-center"));
+    await vi.waitFor(() => expect(mocks.state.editorSettings.pluginShortcuts.position).toBe("toolbar"));
     expect(mocks.state.editorSettings.pluginShortcuts.order).toEqual(["saved"]);
-    expect(container.querySelector("#plugin-shortcuts-toolbar-count")).toBeNull();
+    await nextTick();
+    expect(container.querySelector("#plugin-shortcuts-toolbar-count")).not.toBeNull();
   });
   it("shows one toggle per plugin and preserves choices under the global switch", async () => {
     const switches = container.querySelectorAll<HTMLElement>('[role="switch"]');

@@ -113,8 +113,6 @@ describe("EditorSettingsDialog footer layout", () => {
     ["editor", "settings.editorTab"],
     ["ai", "settings.aiTab"],
     ["sync", "settings.syncTab"],
-    ["mcp", "settings.mcpTab"],
-    ["about", "settings.aboutTab"],
   ])("keeps the %s tab footer outside the scrolling body (page variant)", async (tab, labelKey) => {
     await mountSettings("page");
     if (tab !== "editor") await switchTab(labelKey);

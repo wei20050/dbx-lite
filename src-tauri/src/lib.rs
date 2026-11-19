@@ -2143,7 +2143,6 @@ pub fn run() {
     let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(window_state_guard::persisted_main_window_state_flags())
@@ -2392,19 +2391,10 @@ pub fn run() {
                 }
                 Err(error) => log::error!("[database-backup] worker startup failed: {error}"),
             }
-            let mcp_http_server = Arc::new(commands::mcp_http_server::McpHttpServerState::new(data_dir.clone()));
-            app.manage(mcp_http_server.clone());
-            let mcp_http_state = state.clone();
-            let mcp_gate = migration_gate.clone();
-            tauri::async_runtime::spawn(async move {
-                mcp_gate.wait().await;
-                commands::mcp_http_server::start_if_enabled(mcp_http_state, mcp_http_server).await;
-            });
             app.manage(commands::redis_pubsub_server::start_pubsub_server(state.clone()));
             app.manage(commands::saved_sql::SavedSqlStorageState { data_dir: data_dir.clone() });
             app.manage(commands::external_sql::ExternalSqlOpenState::default());
             app.manage(commands::external_db::ExternalDbOpenState::default());
-            app.manage(commands::update::PendingUpdateState::default());
             app.manage(commands::ssh_prompt::SshPromptState::new());
             commands::ssh_prompt::install_ssh_prompt_bridge(app.handle());
             commands::ssh_prompt::install_ssh_notice_bridge(app.handle());
@@ -2423,11 +2413,8 @@ pub fn run() {
             open_plugin_install_deep_links(app.handle(), startup_plugin_install_links);
 
             let app_handle = app.handle().clone();
-            #[cfg(target_os = "windows")]
-            tauri::async_runtime::spawn_blocking(commands::mcp::cleanup_mcp_installation_temp_files);
             tauri::async_runtime::spawn(async move {
                 migration_gate.wait().await;
-                commands::mcp_bridge::start(app_handle, state, data_dir);
             });
             eprintln!("[STARTUP] setup complete in {:?} (total {:?})", setup_start.elapsed(), startup_begin.elapsed());
             append_startup_probe(format!(
@@ -2599,8 +2586,6 @@ pub fn run() {
             commands::app_settings::save_max_agent_turns,
             commands::app_settings::load_history_retention_limit,
             commands::app_settings::save_history_retention_limit,
-            commands::app_settings::load_mcp_history_retention_limit,
-            commands::app_settings::save_mcp_history_retention_limit,
             commands::app_settings::load_max_retries,
             commands::app_settings::save_max_retries,
             commands::app_settings::load_app_appearance_settings,
@@ -2620,25 +2605,10 @@ pub fn run() {
             commands::app_settings::get_driver_store_path,
             commands::app_settings::load_pinned_tree_node_ids,
             commands::app_settings::save_pinned_tree_node_ids,
-            commands::app_settings::load_mcp_global_policy,
-            commands::app_settings::save_mcp_global_policy,
-            commands::app_settings::load_mcp_tool_catalog,
-            commands::app_settings::load_mcp_access_policy,
-            commands::app_settings::reset_invalid_mcp_access_policy,
-            commands::app_settings::set_mcp_plugin_scope_rule,
-            commands::app_settings::list_plugin_mcp_views,
-            commands::app_settings::load_plugin_mcp_view,
-            commands::app_settings::list_mcp_plugin_scopes,
-            commands::app_settings::save_plugin_mcp_grant,
-            commands::mcp_bridge::respond_mcp_sql_approval,
             commands::background_image::save_background_image,
             commands::background_image::clear_background_image,
             commands::background_image::read_background_image,
             commands::background_image::check_background_image,
-            commands::mcp_http_server::load_mcp_http_server_settings,
-            commands::mcp_http_server::save_mcp_http_server_settings,
-            commands::mcp_http_server::mcp_http_server_status,
-            commands::mcp_http_server::rotate_mcp_http_server_token,
             commands::app_settings::load_editor_settings,
             commands::app_settings::save_editor_settings,
             commands::app_settings::load_global_search_settings,
@@ -3348,29 +3318,11 @@ pub fn run() {
             commands::history::load_history_connection_options,
             commands::history::clear_history,
             commands::history::clear_history_by_source,
-            commands::history::cleanup_mcp_history_retention,
             commands::history::delete_history_entry,
             commands::task_history::load_task_runs,
             commands::task_history::load_task_run,
             commands::task_history::load_task_run_items,
-            commands::mcp::check_mcp_server_status,
-            commands::mcp::check_mcp_keychain_access,
-            commands::mcp::authorize_mcp_keychain,
-            commands::mcp::install_mcp_server,
-            commands::mcp::install_native_mcp_server,
-            commands::mcp::uninstall_mcp_server,
-            commands::mcp::uninstall_npm_mcp_server,
             commands::app_relaunch::relaunch_app,
-            commands::update::check_for_updates,
-            commands::update::fetch_changelog,
-            commands::update::fetch_changelog_index,
-            commands::update::fetch_changelog_release,
-            commands::update::get_system_proxy_url,
-            commands::update::get_downloaded_update,
-            commands::update::discard_downloaded_update,
-            commands::update::download_update,
-            commands::update::cancel_update_download,
-            commands::update::install_downloaded_update,
             commands::transfer::start_transfer,
             commands::transfer::preview_transfer_ownership,
             commands::transfer::cancel_transfer,

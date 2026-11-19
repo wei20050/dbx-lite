@@ -1631,8 +1631,8 @@ function isModelCandidate(config: AiConfigItem): boolean {
 }
 
 // Skill capability belongs to DBX's built-in AI alone (prd 09-30 Req 15a): a CLI
-// run returns before the agent loop builds its tool list and its surface is the
-// DBX MCP server, so nothing in a CLI prompt can reference a skill.
+// run returns before the agent loop builds its tool list, so nothing in a CLI
+// prompt can reference a skill.
 //
 // These sit here, after `activeFullConfig`, and not beside `showSkillSelector`:
 // `watch()` reads its source once at creation, so a predicate placed above the

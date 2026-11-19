@@ -169,7 +169,6 @@ const DatabaseJobAdmin = defineAsyncComponent(() => import("@/components/admin/D
 const DamengUserAdmin = defineAsyncComponent(() => import("@/components/admin/DamengUserAdmin.vue"));
 const DamengRoleAdmin = defineAsyncComponent(() => import("@/components/admin/DamengRoleAdmin.vue"));
 const SolrAdmin = defineAsyncComponent(() => import("@/components/solr/SolrAdmin.vue"));
-const PluginFilesystemTab = defineAsyncComponent(() => import("@/components/plugins/PluginFilesystemTab.vue"));
 const ExplainPlanViewer = defineAsyncComponent(() => import("@/components/explain/ExplainPlanViewer.vue"));
 const QueryChart = defineAsyncComponent(() => import("@/components/chart/QueryChart.vue"));
 const GraphResultView = defineAsyncComponent(() => import("@/components/graph/GraphResultView.vue"));
@@ -437,7 +436,6 @@ const consulWorkspaceRef = ref<SearchableBrowserHandle>();
 const databaseSearchPanelRef = ref<{ focusSearch: () => boolean }>();
 const databaseBrowserRef = ref<SearchableBrowserHandle>();
 const objectBrowserRef = ref<SearchableBrowserHandle>();
-const pluginFilesystemTabRef = ref<{ refresh: () => Promise<unknown> }>();
 const activeTableMeta = computed(() => props.activeTab.tableMeta);
 const activeDataTabTableMeta = computed(() => tableMetaForDataTab(props.activeTab));
 const activeResultExecutionTarget = computed(() => queryStore.activeResultExecutionTarget(props.activeTab.id));
@@ -1807,10 +1805,6 @@ function refreshData(): boolean {
   if (props.activeTab.mode === "consul-overview") return consulOverviewRef.value?.refresh?.() ?? false;
   if (props.activeTab.mode === "consul") return consulWorkspaceRef.value?.refresh?.() ?? false;
   if (props.activeTab.mode === "databases") return databaseBrowserRef.value?.refresh?.() ?? false;
-  if (props.activeTab.mode === "plugin-filesystem") {
-    void pluginFilesystemTabRef.value?.refresh();
-    return true;
-  }
   if (props.activeTab.objectSource || props.activeTab.sourceLoad) {
     if (queryStore.isTabDirty(props.activeTab) && !window.confirm(t("objects.refreshDiscardConfirm"))) return false;
     return queryStore.refreshObjectSourceTab(props.activeTab.id);
@@ -1850,34 +1844,6 @@ function onRefreshObjectBrowser(event: Event) {
   if (!detail || !matchesActiveObjectBrowserRefreshScope(detail)) return;
   void nextTick(() => {
     if (matchesActiveObjectBrowserRefreshScope(detail)) refreshData();
-  });
-}
-
-function openPluginResultView(pluginId: string, contributionId: string, label: string) {
-  const result = props.activeTab.result;
-  if (!result) return;
-  // The tab carries the result-view contribution id, not a workbench id: the
-  // plugin UI is told which declared surface the user picked, and it receives a
-  // bounded snapshot — plugins that need more rows re-run the statement through
-  // `host.queryData` (host.data:read, with the user's consent).
-  const cappedRows = result.rows.slice(0, 500);
-  const connectionId = activeResultConnectionId.value || "";
-  const database = activeResultDatabase.value || "";
-  const schema = activeResultSchema.value || "";
-  queryStore.openPluginWorkbench(pluginId, contributionId, {
-    title: label,
-    connectionId,
-    database,
-    context: {
-      connectionId,
-      database,
-      // The plugin re-runs `sql` through `host.queryData`, whose backend sets
-      // search_path from this; without it unqualified table names miss.
-      schema,
-      sql: resultSqlForGrid(props.activeTab),
-      result: { columns: result.columns, rows: cappedRows, truncated: result.rows.length > cappedRows.length },
-    },
-    refreshContextOnReuse: true,
   });
 }
 
@@ -2980,7 +2946,6 @@ defineExpose({
                 @select-explain="selectOutputView(activeTab.id, 'explain')"
                 @select-profile="selectOutputView(activeTab.id, 'profile')"
                 @export-archive="exportResultArchive"
-                @open-result-view="openPluginResultView"
               >
                 <template v-if="activeOutputView === 'result' && redisResultViewMode === 'grid' && hasTabularResult && !activeElasticsearchJsonResponse && !showElasticsearchRawJson && dataGridRef">
                   <DataGridExportMenu
@@ -3309,8 +3274,7 @@ defineExpose({
                     @select-explain="selectOutputView(activeTab.id, 'explain')"
                     @select-profile="selectOutputView(activeTab.id, 'profile')"
                     @export-archive="exportResultArchive"
-                    @open-result-view="openPluginResultView"
-                  >
+                      >
                     <template v-if="activeOutputView === 'result' && redisResultViewMode === 'grid' && hasTabularResult && !activeElasticsearchJsonResponse && !showElasticsearchRawJson && dataGridRef">
                       <DataGridExportMenu v-if="settingsStore.editorSettings.dataGridExportInToolbar" :items="dataGridRef.exportMenuItems" :warning="dataGridRef.exportWarning" :label="t('grid.export')" :compact="compact" :on-select="dataGridRef.selectExportMenuItem" />
                       <Button
@@ -3987,22 +3951,6 @@ defineExpose({
       </div>
     </template>
 
-    <!-- plugin-workbench tabs render in the always-mounted layer in App.vue
-         (v-show visibility): remounting the webview per tab switch would
-         reload the plugin iframe and drop its live session state. -->
-    <template v-else-if="activeTab.mode === 'plugin-filesystem' && activeTab.pluginFilesystem">
-      <div class="flex h-full min-h-0 flex-col">
-        <PluginFilesystemTab
-          ref="pluginFilesystemTabRef"
-          :key="activeTab.id"
-          :plugin-id="activeTab.pluginFilesystem.pluginId"
-          :provider-id="activeTab.pluginFilesystem.providerId"
-          :connection-id="activeTab.connectionId || undefined"
-          :root-uri="activeTab.pluginFilesystem.rootUri"
-          :initial-uri="activeTab.pluginFilesystem.currentUri"
-        />
-      </div>
-    </template>
     <!-- Database Search mode -->
     <template v-else-if="activeTab.mode === 'database-search'">
       <div class="min-w-0 flex-1 min-h-0">

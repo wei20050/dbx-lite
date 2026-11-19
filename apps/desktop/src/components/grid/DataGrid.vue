@@ -5,7 +5,6 @@ import { applyDdlSearchMarks } from "@/lib/sql/ddlSearchMarks";
 import { isAiPromptImeCompositionEvent } from "@/lib/ai/aiPromptKeyboard";
 import DdlStorageToggle from "@/components/objects/DdlStorageToggle.vue";
 
-import { useUpdateBlocker } from "@/lib/app/updatePreparation";
 import { useResultViewUpdateTiming } from "@/composables/useResultViewUpdateTiming";
 import { computed, nextTick, onMounted, onUnmounted, onActivated, onDeactivated, ref, shallowRef, toRaw, useSlots, watch, defineAsyncComponent, type Component, type CSSProperties } from "vue";
 import { useI18n } from "vue-i18n";
@@ -15745,7 +15744,6 @@ function openGridSnapshot() {
   };
   gridSnapshotOpen.value = true;
 }
-useUpdateBlocker(() => (hasPendingChanges.value || hasPendingDataEditorDraft.value || isSaving.value ? t("updates.preparationDrafts") : undefined));
 </script>
 
 <template>

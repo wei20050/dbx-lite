@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Code2, Database, DatabaseZap, Download, FilePlus2, History, Plus, Search, Settings2, ShieldCheck, Sparkles, Table2 } from "@lucide/vue";
+import { ArrowRight, Code2, Database, DatabaseZap, Download, FilePlus2, History, Plus, Settings2, ShieldCheck, Sparkles, Table2 } from "@lucide/vue";
 import DatabaseIcon from "@/components/icons/DatabaseIcon.vue";
 import AppLogo from "@/components/icons/AppLogo.vue";
 import LightDropdown from "@/components/ui/LightDropdown.vue";
@@ -36,9 +36,6 @@ const emit = defineEmits<{
   "new-query": [];
   "show-history": [];
   "import-config": [source: ImportSource];
-  "open-github": [];
-  "open-mcp-guide": [];
-  "open-website": [];
   "open-settings": [];
 }>();
 
@@ -135,10 +132,7 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
         </div>
 
         <div class="mt-5 flex flex-wrap items-center justify-center gap-2 text-[10px] text-muted-foreground/60 @2xl:mt-6 @2xl:gap-3 @2xl:text-[11px]">
-          <span>DBX {{ appVersion ? "v" + displayAppVersion(appVersion) : "" }}</span
-          ><span>·</span>
-          <a href="#" class="hover:text-foreground" @click.prevent="emit('open-github')">GitHub</a>
-          <span>·</span><button type="button" class="hover:text-foreground" @click="emit('open-website')">{{ t("welcome.mcpLearnMore") }}</button>
+          <span>dbx-lite {{ appVersion ? "v" + displayAppVersion(appVersion) : "" }}</span>
         </div>
       </div>
     </div>
@@ -165,48 +159,22 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
         </div>
       </div>
 
-      <div class="welcome-main-grid grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-        <div class="min-w-0 overflow-hidden rounded-lg border">
-          <div class="flex items-center justify-between border-b px-4 py-3">
-            <div class="text-sm font-medium">{{ t("welcome.quickConnections") }}</div>
-          </div>
-          <div class="divide-y">
-            <button v-for="connection in recentConnections" :key="connection.id" class="flex w-full min-w-0 items-center gap-3 overflow-hidden px-4 py-3 text-left hover:bg-muted/40" @click="emit('open-connection-query', connection.id)">
-              <DatabaseIcon :db-type="connectionIconType(connection)" class="h-4 w-4 shrink-0" />
-              <span class="h-5 w-1 rounded-full shrink-0" :style="{ backgroundColor: connection.color || '#9ca3af' }" />
-              <div class="min-w-0 flex-1">
-                <TruncatedTextTooltip :text="connectionRedactedNameLabel(connection)" class="block text-sm font-medium" />
-                <TruncatedTextTooltip :text="welcomeConnectionSubtitle(connection)" class="block text-xs text-muted-foreground" tooltip-class="max-w-[min(42rem,calc(100vw-2rem))] whitespace-pre-wrap break-all px-3 py-2 text-left leading-5" />
-              </div>
-              <FilePlus2 class="h-4 w-4 shrink-0 text-muted-foreground" />
-            </button>
-            <div v-if="recentConnections.length === 0" class="px-4 py-8 text-sm text-muted-foreground">
-              {{ t("sidebar.noConnections") }}
-            </div>
-          </div>
+      <div class="min-w-0 overflow-hidden rounded-lg border">
+        <div class="flex items-center justify-between border-b px-4 py-3">
+          <div class="text-sm font-medium">{{ t("welcome.quickConnections") }}</div>
         </div>
-
-        <div class="min-w-0 overflow-hidden rounded-lg border">
-          <div class="border-b px-4 py-3">
-            <div class="text-sm font-medium">{{ t("welcome.shortcuts") }}</div>
-          </div>
-          <div class="grid min-w-0 gap-1 p-2">
-            <button class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm hover:bg-muted/50" @click="emit('new-connection')">
-              <Plus class="h-4 w-4 shrink-0" /> <span class="min-w-0 truncate">{{ t("toolbar.newConnection") }}</span>
-            </button>
-            <button v-if="canNewQuery" class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm hover:bg-muted/50" @click="emit('new-query')">
-              <FilePlus2 class="h-4 w-4 shrink-0" /> <span class="min-w-0 truncate">{{ t("toolbar.newQuery") }}</span>
-            </button>
-            <button class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm hover:bg-muted/50" @click="emit('show-history')">
-              <History class="h-4 w-4 shrink-0" /> <span class="min-w-0 truncate">{{ t("history.title") }}</span>
-            </button>
-            <button class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm hover:bg-muted/50" @click="emit('import-config', 'dbx')">
-              <Download class="h-4 w-4 shrink-0" /> <span class="min-w-0 truncate">{{ t("sidebar.import") }}</span>
-            </button>
-            <div class="mt-2 min-w-0 overflow-hidden rounded-md bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
-              <Search class="mr-1 inline h-3.5 w-3.5 shrink-0" />
-              {{ t("welcome.tip") }}
+        <div class="divide-y">
+          <button v-for="connection in recentConnections" :key="connection.id" class="flex w-full min-w-0 items-center gap-3 overflow-hidden px-4 py-3 text-left hover:bg-muted/40" @click="emit('open-connection-query', connection.id)">
+            <DatabaseIcon :db-type="connectionIconType(connection)" class="h-4 w-4 shrink-0" />
+            <span class="h-5 w-1 rounded-full shrink-0" :style="{ backgroundColor: connection.color || '#9ca3af' }" />
+            <div class="min-w-0 flex-1">
+              <TruncatedTextTooltip :text="connectionRedactedNameLabel(connection)" class="block text-sm font-medium" />
+              <TruncatedTextTooltip :text="welcomeConnectionSubtitle(connection)" class="block text-xs text-muted-foreground" tooltip-class="max-w-[min(42rem,calc(100vw-2rem))] whitespace-pre-wrap break-all px-3 py-2 text-left leading-5" />
             </div>
+            <FilePlus2 class="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
+          <div v-if="recentConnections.length === 0" class="px-4 py-8 text-sm text-muted-foreground">
+            {{ t("sidebar.noConnections") }}
           </div>
         </div>
       </div>
@@ -237,28 +205,9 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
         </div>
       </div>
 
-      <!-- MCP Integration Hint -->
-      <div class="min-w-0 overflow-hidden rounded-lg border bg-muted/10 px-5 py-4">
-        <div class="flex min-w-0 items-start gap-3">
-          <Sparkles class="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-          <div class="min-w-0 flex-1">
-            <div class="text-sm font-medium">{{ t("welcome.mcpTitle") }}</div>
-            <p class="mt-1 text-xs leading-5 text-muted-foreground">
-              {{ t("welcome.mcpDescription") }}
-            </p>
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              <code class="max-w-full break-all rounded bg-muted px-2 py-0.5 text-[11px] select-all">npx @dbx-app/mcp-server</code>
-              <a href="#" class="text-xs text-primary hover:underline" @click.prevent="emit('open-mcp-guide')">{{ t("welcome.mcpLearnMore") }}</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Project Info -->
       <div class="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
-        <span>DBX {{ appVersion ? "v" + displayAppVersion(appVersion) : "" }}</span>
-        <span>·</span>
-        <a href="#" class="hover:text-foreground transition-colors" @click.prevent="emit('open-github')">GitHub</a>
+        <span>dbx-lite {{ appVersion ? "v" + displayAppVersion(appVersion) : "" }}</span>
       </div>
     </div>
   </div>
@@ -283,9 +232,4 @@ function welcomeConnectionSubtitle(connection: ConnectionConfig): string {
   }
 }
 
-@media (min-width: 1024px) {
-  .welcome-main-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) !important;
-  }
-}
 </style>

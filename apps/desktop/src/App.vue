@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { blockingDesktopAiRunsForUpdate } from "@/lib/ai/desktopAiRunRegistry";
-import { setupUpdatePreparation, prepareUpdateWithDraftRecovery, isUpdatePreparationActive, UpdatePreparationError } from "@/lib/app/updatePreparation";
-import { describeConfigUpdateBlock, type UpdateBlockingConfigState, type UpdateConfigTranslator } from "@/lib/app/updatePreparationSurfaces";
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineAsyncComponent, provide } from "vue";
-import { MCP_CALL_HISTORY_OPEN_EVENT, type McpCallHistoryRequest } from "@/lib/mcp/mcpCallHistory";
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 import { checkStartupAuthentication, logoutWeb, type StartupAuthentication } from "@/lib/startup/startupAuthentication";
 import { markStartupPhase } from "@/lib/startup/startupTiming";
@@ -22,7 +18,6 @@ import SidebarReveal from "@/components/layout/SidebarReveal.vue";
 import SqlEditorWorkspace from "@/components/layout/SqlEditorWorkspace.vue";
 import { EDITOR_TOOLBAR_ACTIONS } from "@/components/layout/editorToolbarActions";
 import AppDialogs from "@/components/layout/AppDialogs.vue";
-import McpSqlApprovalDialog from "@/components/mcp/McpSqlApprovalDialog.vue";
 import DetachedTabHeader from "@/components/layout/DetachedTabHeader.vue";
 import WelcomeScreen from "@/components/layout/WelcomeScreen.vue";
 import type { ConfigTab } from "@/components/connection/ConnectionDialog.vue";
@@ -43,25 +38,6 @@ import { useToast } from "@/composables/useToast";
 import ToastHost from "@/components/common/ToastHost.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useEditorFontFamilyStyle } from "@/composables/useEditorFontFamilyStyle";
-import { canDownloadAndInstallUpdate, useAppUpdater } from "@/composables/useAppUpdater";
-import { useMcpUpdateBadge } from "@/composables/useMcpUpdateBadge";
-import { useComponentUpdates, type ComponentUpdateCategory } from "@/composables/useComponentUpdates";
-import type { PluginUpdateBlock } from "@/composables/useComponentUpdates";
-import { COMPONENT_UPDATES_CHANGED_EVENT, notifyComponentDriverUpdatesChanged, notifyComponentPluginsUpdated, notifyComponentUpdatesChanged } from "@/lib/updates/componentUpdateEvents";
-import { driverStoreUpdateBadgeCount, showMcpUpdateBadge, showToolbarUpdateAction } from "@/lib/updates/updateBadges";
-import {
-  continuePreparedAppUpdate,
-  hasPendingComponentUpdatesAfterAppRestart,
-  markPendingComponentUpdatesAfterAppUpdate,
-  resolveUpdateAllAction,
-  runPendingComponentUpdatesBeforePluginReconnect,
-  runPendingComponentUpdatePlan,
-  shouldCloseUpdateCenterAfterComponentUpdate,
-  takePendingComponentUpdatesAfterAppRestart,
-  updateBlockerLabels,
-  type PendingComponentUpdatePlan,
-} from "@/lib/updates/componentUpdateOrchestration";
-import { isUpdatePreviewMockEnabled } from "@/lib/updates/updatePreviewMock";
 import { restoreExportTasksFromStorage, useExportTracker } from "@/composables/useExportTracker";
 import { useFileDrop } from "@/composables/useFileDrop";
 import { useSqlFilePicker } from "@/composables/useSqlFilePicker";
@@ -125,9 +101,7 @@ import { rememberExternalSqlFileTarget, resolveExternalSqlFileTarget, resolveExt
 import { defaultSavedQueryFileName, externalSqlFileOpenErrorMessage, externalSqlEditorMaxBytes, isSqlFilePath, isSqlOrScriptFilePath, queryTabExternalFilePath, sqlFileTitleFromPath } from "@/lib/sql/sqlFileOpen";
 
 import type { ConnectionConfig, DatabaseType, ObjectBrowserFilter, ObjectSourceKind, QueryTab, TableInfoTab, TabOutputView, TreeNode } from "@/types/database";
-import { OPEN_PLUGIN_SETTINGS, type PluginCenterFocus } from "@/lib/plugins/pluginCenterNavigation";
-import { parsePluginInstallDeepLink } from "@/lib/plugins/pluginInstallDeepLink";
-import { createFrontendPluginRegistry, pluginConnectionProviderDefaultPort } from "@/lib/plugins/frontendPlugin";
+import { createFrontendPluginRegistry, pluginConnectionProviderDefaultPort, type PluginConnectionTarget } from "@/lib/plugins/frontendPlugin";
 import { parseConnectionDeepLink, parseConnectionDeepLinkUpdate, type ConnectionDeepLinkDraft, type ConnectionDeepLinkPluginProvider, type ConnectionDeepLinkUpdate } from "@/lib/connection/connectionDeepLink";
 import { resolveConnectionDeepLinkUpdate } from "@/lib/connection/connectionDeepLinkUpdate";
 import { parseAiConfigDeepLink, type AiConfigDeepLinkDraft } from "@/lib/ai/aiConfigDeepLink";
@@ -205,7 +179,6 @@ import { resolveAiSqlTargetTabId, type AiSqlApplyTargetMode } from "@/lib/ai/aiS
 import { assessProductionSql } from "@/lib/database/productionSafety";
 import { normalizeSqlExecutionTarget, sqlExecutionTargetCapabilities } from "@/lib/database/sqlExecutionTargetCapabilities";
 import { buildHistoryAiAnalysisPrompt } from "@/lib/history/historyAiAnalysis";
-import { countAvailableAgentDriverUpdates } from "@/lib/connection/agentDriverUpdateBadge";
 import type { DriverStoreFocus, DriverStoreTab } from "@/lib/connection/agentDriverInstallHint";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/backend/safeStorage";
 import { webPath } from "@/lib/common/webPath";
@@ -218,7 +191,6 @@ import { createUiScaleApplyQueue } from "@/lib/app/uiScaleApplyQueue";
 import { savedSqlErrorMessage } from "@/lib/savedSql/savedSqlErrors";
 import { subscribeSavedSqlLibraryChanges } from "@/lib/savedSql/savedSqlLibraryEvents";
 import { savedSqlDefaultTargetForWrite } from "@/lib/savedSql/savedSqlExecutionTarget";
-import { countActiveUpdateBlockingTasks } from "@/lib/app/appUpdateTaskGuard";
 import { initSavedSqlEditorPositions } from "@/lib/app/savedSqlEditorPosition";
 import { consumeDetachedTabTransfer, markTabWindowTransferAccepted, tabWindowTransferEntries } from "@/lib/tabs/tabWindowTransfer";
 import { TAB_WINDOW_TRANSFER, useTabWindowTransfer } from "@/composables/useTabWindowTransfer";
@@ -260,12 +232,9 @@ const PluginWorkbenchTab = defineAsyncComponent(() => import("@/components/plugi
 const QueryHistory = defineAsyncComponent(() => import("@/components/editor/QueryHistory.vue"));
 const SqlLibraryPanel = defineAsyncComponent(() => import("@/components/layout/SqlLibraryPanel.vue"));
 const SqlFilePanel = defineAsyncComponent(() => import("@/components/layout/SqlFilePanel.vue"));
-const DriverStorePage = defineAsyncComponent(() => import("@/components/config/DriverStoreDialog.vue"));
-const PluginCenterPage = defineAsyncComponent(() => import("@/components/plugins/PluginContributionsPanel.vue"));
 const PluginBottomDock = defineAsyncComponent(() => import("@/components/plugins/PluginBottomDock.vue"));
 const EditorSettingsPage = defineAsyncComponent(() => import("@/components/editor/EditorSettingsDialog.vue"));
 const TableCopyProgressDialog = defineAsyncComponent(() => import("@/components/objects/TableCopyProgressDialog.vue"));
-const UpdateDialog = defineAsyncComponent(() => import("@/components/layout/UpdateDialog.vue"));
 const CloseActionPromptDialog = defineAsyncComponent(() => import("@/components/layout/CloseActionPromptDialog.vue"));
 const AiRunsClosePromptDialog = defineAsyncComponent(() => import("@/components/layout/AiRunsClosePromptDialog.vue"));
 const BackgroundTasksClosePromptDialog = defineAsyncComponent(() => import("@/components/layout/BackgroundTasksClosePromptDialog.vue"));
@@ -300,7 +269,7 @@ const { t, locale: appLocale } = useI18n();
 const startupProps = defineProps<{ startupAuthentication?: StartupAuthentication }>();
 const connectionStore = useConnectionStore();
 const queryStore = useQueryStore();
-const tabWindowTransfer = useTabWindowTransfer({ canCloseEmptyWindow: () => !settingsPageTabOpen.value && !pluginCenterTabOpen.value && !driverStoreTabOpen.value });
+const tabWindowTransfer = useTabWindowTransfer({ canCloseEmptyWindow: () => !settingsPageTabOpen.value && !driverStoreTabOpen.value });
 provide(TAB_WINDOW_TRANSFER, tabWindowTransfer);
 const navigationStore = useNavigationStore();
 const settingsStore = useSettingsStore();
@@ -326,14 +295,13 @@ watch(appLocale, async (locale) => {
 });
 const recentConnectionIds = ref<readonly string[]>(parseRecentConnectionIds(safeLocalStorageGet(RECENT_CONNECTION_IDS_STORAGE_KEY)));
 connectionStore.setBeforeConnectHandler(async (config) => {
-  const jdbcxRuntime = await ensureJdbcxRuntimeDrivers(config, api);
+  await ensureJdbcxRuntimeDrivers(config, api);
   const jdbcProductRuntimeBefore = JSON.stringify({
     connectionString: config.connection_string ?? null,
     driverClass: config.jdbc_driver_class ?? null,
     driverPaths: config.jdbc_driver_paths ?? [],
   });
   const jdbcProductRuntime = await ensureRegisteredJdbcProductRuntimeDrivers(config, api);
-  if (jdbcxRuntime || jdbcProductRuntime) notifyComponentUpdatesChanged();
   const jdbcProductRuntimeAfter = JSON.stringify({
     connectionString: config.connection_string ?? null,
     driverClass: config.jdbc_driver_class ?? null,
@@ -347,122 +315,20 @@ const { toast } = useToast();
 const { isDark, themeMode, applyTheme, setThemeMode, writeRootToken } = useTheme();
 const { activeCount: activeBackgroundTaskCount, tasks: backgroundTasks, cancelTask: cancelBackgroundTask } = useExportTracker();
 const tableCopyTasks = useTableCopyTaskStore();
-const trackedUpdateTaskCount = computed(() => countActiveUpdateBlockingTasks(activeBackgroundTaskCount.value, queryStore.tabs));
-const {
-  initialize: initializeUpdater,
-  dispose: disposeUpdater,
-  isPreparingUpdate,
-  checkingUpdates,
-  updateInfo,
-  visibleUpdateInfo,
-  updateCheckMessage,
-  updateCheckFailed,
-  showUpdateDialog,
-  isDownloadingUpdate,
-  downloadProgress,
-  updateDownloaded,
-  updateDownloadedVersion,
-  isInstallingUpdate,
-  updateReady,
-  isIgnoringUpdate,
-  activeTaskCount: activeUpdateTaskCount,
-  hasUpdateAvailable,
-  openUrl,
-  checkUpdates,
-  openLatestRelease,
-  changeUpdateDownloadSource,
-  ignoreCurrentVersion,
-  restoreIgnoredVersion,
-  ignoredReleaseVersion,
-  downloadUpdateInBackground,
-  cancelDownload,
-  installDownloadedUpdate,
-  restartApp,
-} = useAppUpdater({
-  getActiveTaskCount: () => trackedUpdateTaskCount.value,
-  prepareForUpdate: async () => {
-    if (!updatePreparation) throw new Error(t("updates.preparationNotReady"));
-    return prepareUpdateWithDraftRecovery(() => updatePreparation!.prepare());
-  },
-});
 const { setupFileDrop } = useFileDrop();
 const { openSqlFile } = useSqlFilePicker();
 
 const isDesktop = isTauriRuntime();
-const componentUpdates = useComponentUpdates({ isDesktop: isDesktop || isUpdatePreviewMockEnabled() });
 const windowContext = resolveWindowContext();
 const isDetachedWindowContext = windowContext.kind === "detached-tab";
 const detachedContextTabId = windowContext.kind === "detached-tab" ? windowContext.tabId : undefined;
-let updateWindowReady = false;
-let updatePreparation: Awaited<ReturnType<typeof setupUpdatePreparation>> | undefined;
-const translateUpdateSurface: UpdateConfigTranslator = (key, named) => (named ? t(key, named) : t(key));
-/** Snapshot of every surface that must be closed before the installer may run. */
-function updateBlockingConfigState(): UpdateBlockingConfigState {
-  return {
-    pendingAppClose: pendingAppCloseAction.value !== null,
-    saveCloseConfirm: queryStore.showCloseConfirm && queryStore.isConfirmingAppClose,
-    exitCloseConfirm: showCloseActionPrompt.value || showAiRunsClosePrompt.value || showBackgroundTasksClosePrompt.value,
-    connectionDialog: showConnectionDialog.value,
-    saveSqlDialog: showSaveSqlDialog.value,
-    ddlDialog: showQueryEditorDdlDialog.value,
-    objectSourceDialog: showQueryEditorObjectSourceDialog.value,
-    sqlParameterDialog: showSqlParameterDialog.value,
-    dangerDialog: showDangerDialog.value || showResultChangesDialog.value,
-    multiDbExecuteDialog: showMultiDbExecuteDialog.value,
-    transferDialog: dialogs.showTransferDialog.value,
-    sqlFileDialog: dialogs.showSqlFileDialog.value,
-    tableImportDialog: dialogs.showTableImportDialog.value,
-    mongoImportDialog: dialogs.showMongoImportDialog.value,
-    dataGenerateDialog: dialogs.showTableDataGenerateDialog.value,
-    databaseExportDialog: dialogs.showDatabaseExportDialog.value,
-    schemaDiffDialog: dialogs.showSchemaDiffDialog.value,
-    dataCompareDialog: dialogs.showDataCompareDialog.value,
-    configPassphraseDialog: dialogs.showConfigPassphraseDialog.value,
-    configPassphraseExportMode: dialogs.configPassphraseMode.value === "export",
-    configConnectionSelectDialog: dialogs.showConfigConnectionSelectDialog.value,
-    configConnectionSelectExportMode: dialogs.configConnectionSelectMode.value === "export",
-    configUnencryptedExportConfirm: dialogs.showConfigUnencryptedExportConfirm.value,
-    importLayoutConfirm: dialogs.showImportLayoutConfirm.value,
-    configExportBusy: dialogs.configExportBusy.value,
-    importApplying: dialogs.applyingImportSelection.value,
-  };
-}
-async function initializeUpdatePreparation() {
-  if (!isDesktop || updatePreparation) return;
-  updatePreparation = await setupUpdatePreparation({
-    translate: (key) => t(key),
-    assertSafe() {
-      if (!updateWindowReady) throw new UpdatePreparationError(t("updates.preparationNotReady"), "not_ready");
-      if (trackedUpdateTaskCount.value > 0 || blockingDesktopAiRunsForUpdate().length > 0 || queryStore.tabs.some((tab) => tab.isCancelling || tab.isExplaining || tab.txnSessionId)) {
-        throw new UpdatePreparationError(t("updates.preparationTasks"), "tasks");
-      }
-      if (queryStore.tabs.some((tab) => (tab.pendingDataChangeCount ?? 0) > 0 || tab.hasPendingDataEditorDraft)) {
-        throw new UpdatePreparationError(t("updates.preparationDrafts"), "drafts");
-      }
-      const configBlock = describeConfigUpdateBlock(updateBlockingConfigState(), translateUpdateSurface);
-      if (configBlock) throw new UpdatePreparationError(configBlock.message, configBlock.code);
-    },
-    async persist() {
-      await nextTick();
-      await queryStore.flushPendingPersist();
-    },
-  });
-}
 
 const activeAiRunCount = computed(() => (isDesktop ? activeDesktopAiRuns().length : 0));
 /** Runs waiting for a write confirmation — the panel-entry badge shows these
  *  with a higher-priority indicator (parent PRD §4 line 71 / §9). */
 const awaitingAiRunCount = computed(() => (isDesktop ? activeDesktopAiRuns().filter((run) => run.status === "awaiting_write_confirmation").length : 0));
-const { mcpUpdateAvailable, refreshMcpUpdateStatus, handleMcpStatusChanged, applyMcpStatus, invalidateMcpUpdateStatus } = useMcpUpdateBadge({
-  isDesktop,
-  // Update availability remains visible when every auto-update switch is off;
-  // the switches control installation, not whether the user can be reminded.
-  updateNotificationsEnabled: () => true,
-  shouldDeferRefresh: () => componentUpdates.updating.value,
-});
 const drawDesktopWindowFrame = shouldDrawDesktopWindowFrame(isMacOS(), isDesktop, isWindows());
-const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
-let updateCheckTimer: ReturnType<typeof setInterval> | undefined;
+
 const needsAuth = ref(!isDesktop && (startupProps.startupAuthentication?.required ?? true));
 const authenticated = ref(isDesktop || (startupProps.startupAuthentication?.authenticated ?? false));
 const setupRequired = ref(!isDesktop && (startupProps.startupAuthentication?.setup_required ?? false));
@@ -506,40 +372,17 @@ const showQueryEditorObjectSourceDialog = ref(false);
 const driverStoreTabOpen = ref(false);
 const driverStoreActive = ref(false);
 const driverStoreActiveTab = ref<"agent" | "jdbc" | "storage" | "runtime">("agent");
-const pluginCenterTabOpen = ref(false);
-const pluginCenterActive = ref(false);
-const pluginCenterFocus = ref<PluginCenterFocus | null>(null);
-const connectionPluginProvider = ref<PluginCenterFocus | null>(null);
-const settingsReturnSurface = ref<"query" | "driverStore" | "pluginCenter" | "welcome">("welcome");
+const connectionPluginProvider = ref<PluginConnectionTarget | null>(null);
+const settingsReturnSurface = ref<"query" | "driverStore" | "welcome">("welcome");
 const immediateSyncing = ref(false);
 const showDriverStore = computed(() => driverStoreTabOpen.value && driverStoreActive.value);
-const showPluginCenter = computed(() => pluginCenterTabOpen.value && pluginCenterActive.value);
 const showSettingsPage = computed(() => Boolean(settingsPageTabOpen.value && settingsStore.settingsPageActive));
-const isSpecialPageActive = computed(() => !isDetachedWindowContext && (driverStoreActive.value || pluginCenterActive.value || settingsStore.settingsPageActive));
+const isSpecialPageActive = computed(() => !isDetachedWindowContext && (driverStoreActive.value || settingsStore.settingsPageActive));
 const showQuickOpen = ref(false);
 const quickOpenForceContent = ref(false);
 const showTabSwitcher = ref(false);
 const tabSwitcherIndex = ref(0);
-const agentDriverUpdateCount = ref(0);
 const showHistory = ref(false);
-const mcpHistoryRequest = ref<McpCallHistoryRequest | null>(null);
-
-/** Settings → MCP asks for the call history: open the panel on its MCP view. */
-function openMcpCallHistory(event?: Event) {
-  // Keep the request across the async component's first load; nextTick alone
-  // does not wait for QueryHistory to mount and receive an event.
-  mcpHistoryRequest.value = { resource: event instanceof CustomEvent ? event.detail : undefined };
-  openRightSidebarPanel("history");
-}
-
-watch(
-  showHistory,
-  (open) => {
-    if (!open) mcpHistoryRequest.value = null;
-  },
-  // Also cancel a close/reopen in the same tick before the lazy panel mounts.
-  { flush: "sync" },
-);
 const showAiPanel = ref(!isDetachedWindowContext && safeLocalStorageGet("dbx-ai-panel-open") === "true");
 const isAiPanelMaximized = ref(false);
 const isHistoryPanelMaximized = ref(false);
@@ -1086,20 +929,6 @@ const canCreateNewQuery = computed(() => connectionStore.connections.some((conne
 // the toolbar's Commit/Rollback visibility can apply the Oracle dirty-state rule
 // without inferring Oracle from the raw transport type.
 
-function updateAgentDriverUpdateCount(count: number) {
-  agentDriverUpdateCount.value = count;
-}
-
-async function refreshAgentDriverUpdateCount() {
-  if (!isDesktop) return;
-  try {
-    const drivers = await api.listInstalledAgents();
-    updateAgentDriverUpdateCount(countAvailableAgentDriverUpdates(drivers));
-  } catch {
-    // Driver update availability is only a badge hint; keep the existing count if the registry cannot be reached.
-  }
-}
-
 function restoreHistorySql(sql: string, entry: HistoryEntry) {
   const target = resolveHistorySqlRestoreTarget({
     entry,
@@ -1272,26 +1101,6 @@ function requestActiveEditorExecuteInNewResultTab(source?: "pointer" | "keyboard
   void tryExecuteInNewResultTab(undefined, targetTabId ? { tabId: targetTabId } : undefined);
 }
 
-const toolbarAgentDriverUpdateCount = computed(() => Math.max(agentDriverUpdateCount.value, componentUpdates.driverUpdateCount.value));
-const toolbarDriverUpdateCount = computed(() => toolbarAgentDriverUpdateCount.value);
-const toolbarJdbcUpdateAvailable = computed(() => componentUpdates.jdbcUpdateAvailable.value);
-const toolbarMcpUpdateAvailable = computed(() => mcpUpdateAvailable.value || componentUpdates.mcpUpdateAvailable.value);
-const toolbarHasUpdateAvailable = computed(() =>
-  showToolbarUpdateAction({
-    appUpdateAvailable: hasUpdateAvailable.value,
-    driverUpdateCount: toolbarDriverUpdateCount.value,
-    jdbcUpdateAvailable: toolbarJdbcUpdateAvailable.value,
-    mcpUpdateAvailable: toolbarMcpUpdateAvailable.value,
-    pluginUpdateCount: componentUpdates.pluginUpdateCount.value,
-    componentUpdatesRunning: componentUpdates.updating.value,
-  }),
-);
-const showDriverStoreUpdateBadge = computed(() => driverStoreUpdateBadgeCount(settingsStore.editorSettings.autoUpdateDrivers, settingsStore.editorSettings.autoUpdateJdbc, toolbarDriverUpdateCount.value, toolbarJdbcUpdateAvailable.value));
-const showMcpSettingsUpdateBadge = computed(() => showMcpUpdateBadge(settingsStore.editorSettings.autoUpdateMcp, toolbarMcpUpdateAvailable.value));
-const manualCheckingAllUpdates = ref(false);
-const checkingAllUpdates = computed(() => manualCheckingAllUpdates.value || checkingUpdates.value || componentUpdates.loading.value);
-const updatingAllUpdates = ref(false);
-
 // Per-group editor toolbars call back into this App-owned orchestration. The
 // group focuses itself on pointerdown/focusin before any toolbar event, so the
 // acting tab is passed explicitly instead of relying on the focused group.
@@ -1300,11 +1109,9 @@ const updatingAllUpdates = ref(false);
 const specialPageTabs = computed(() => ({
   settingsOpen: settingsPageTabOpen.value,
   settingsActive: settingsStore.settingsPageActive,
-  pluginCenterOpen: pluginCenterTabOpen.value,
-  pluginCenterActive: pluginCenterActive.value,
-  driverStoreOpen: driverStoreTabOpen.value,
-  driverStoreActive: driverStoreActive.value,
-  driverUpdateCount: showDriverStoreUpdateBadge.value,
+  driverStoreOpen: false,
+  driverStoreActive: false,
+  driverUpdateCount: 0,
 }));
 provide(GROUP_TAB_BAR_PORTAL, createGroupTabBarPortal(isSpecialPageActive));
 provide(EDITOR_TOOLBAR_ACTIONS, {
@@ -1344,8 +1151,6 @@ provide(EDITOR_TOOLBAR_ACTIONS, {
   specialPageTabs,
   activateSettingsPage,
   closeSettingsPage,
-  activatePluginCenter: () => openPluginCenterPage(pluginCenterFocus.value),
-  closePluginCenter: closePluginCenterPage,
   activateDriverStore: () => openDriverStorePage(),
   closeDriverStore: closeDriverStorePage,
 });
@@ -1438,7 +1243,6 @@ const { setupTauriListeners, cleanupTauriListeners } = useTauriEvents({
   openConnectionDeepLink,
   closeActiveSurface,
   openAiConfigDeepLink,
-  openPluginInstallDeepLink,
   refreshPluginWorkbenches,
 });
 const { showCloseActionPrompt, isQuitPrepared, cancelAppQuit, chooseQuit, chooseMinimize, cancelCloseActionPrompt, performCloseAction, setupCloseActionPromptListener, cleanupCloseActionPromptListener } = useCloseActionPrompt({
@@ -1477,7 +1281,7 @@ function openSettings(initialTab = "appearance", initialSection?: string) {
   settingsInitialSection.value = initialSection;
   settingsNavigationRequestId.value += 1;
   if (!settingsStore.settingsPageActive) {
-    settingsReturnSurface.value = showDriverStore.value ? "driverStore" : showPluginCenter.value ? "pluginCenter" : activeTab.value ? "query" : "welcome";
+    settingsReturnSurface.value = showDriverStore.value ? "driverStore" : activeTab.value ? "query" : "welcome";
   }
   activateSettingsPage();
 }
@@ -1515,12 +1319,11 @@ async function openImmediateSync() {
   }
 }
 
-type MainContentSurface = "query" | "settings" | "driverStore" | "pluginCenter";
+type MainContentSurface = "query" | "settings" | "driverStore";
 
 function activateMainContentSurface(surface: MainContentSurface) {
   settingsStore.settingsPageActive = surface === "settings";
   driverStoreActive.value = surface === "driverStore";
-  pluginCenterActive.value = surface === "pluginCenter";
   lastFocusedSidebarSurface.value = false;
 }
 
@@ -1562,10 +1365,6 @@ function activateOpenSpecialPageFallback() {
   }
   if (driverStoreTabOpen.value) {
     activateMainContentSurface("driverStore");
-    return;
-  }
-  if (pluginCenterTabOpen.value) {
-    activateMainContentSurface("pluginCenter");
   }
 }
 
@@ -1585,16 +1384,8 @@ function finishCloseSettingsPage() {
     activateMainContentSurface("driverStore");
     return;
   }
-  if (settingsReturnSurface.value === "pluginCenter" && pluginCenterTabOpen.value) {
-    activateMainContentSurface("pluginCenter");
-    return;
-  }
   if (driverStoreTabOpen.value) {
     activateMainContentSurface("driverStore");
-    return;
-  }
-  if (pluginCenterTabOpen.value) {
-    activateMainContentSurface("pluginCenter");
     return;
   }
   activateMainContentSurface("query");
@@ -1614,18 +1405,11 @@ function openDriverStorePage(target?: DriverStoreTab | DriverStoreFocus | null) 
   }
   driverStoreTabOpen.value = true;
   activateMainContentSurface("driverStore");
-  pluginCenterActive.value = false;
 }
 
 function closeDriverStorePage() {
   driverStoreTabOpen.value = false;
-  // Keep another open special page visible when closing the active one. The
-  // previous implementation always switched to the query surface, which
-  // cleared pluginCenterActive and made an already-open Plugin Center tab
-  // disappear together with Driver Manager.
-  if (pluginCenterTabOpen.value) {
-    activateMainContentSurface("pluginCenter");
-  } else if (settingsPageTabOpen.value) {
+  if (settingsPageTabOpen.value) {
     activateMainContentSurface("settings");
   } else {
     activateMainContentSurface("query");
@@ -1634,175 +1418,6 @@ function closeDriverStorePage() {
   driverStoreFocus.value = null;
 }
 
-function openPluginCenterPage(focus?: PluginCenterFocus | null) {
-  pluginCenterFocus.value = focus ?? null;
-  pluginCenterTabOpen.value = true;
-  activateMainContentSurface("pluginCenter");
-}
-
-provide(OPEN_PLUGIN_SETTINGS, () => openPluginCenterPage({ section: "settings" }));
-
-function closePluginCenterPage() {
-  pluginCenterTabOpen.value = false;
-  pluginCenterFocus.value = null;
-  if (driverStoreTabOpen.value) {
-    activateMainContentSurface("driverStore");
-  } else if (settingsPageTabOpen.value) {
-    activateMainContentSurface("settings");
-  } else {
-    activateMainContentSurface("query");
-  }
-}
-
-function openPluginConnectionDialog(pluginId: string, providerId: string) {
-  connectionPluginProvider.value = { pluginId, providerId };
-  showConnectionDialog.value = true;
-}
-async function checkAllUpdates() {
-  if (manualCheckingAllUpdates.value || componentUpdates.updating.value) return;
-  manualCheckingAllUpdates.value = true;
-  const startedAt = Date.now();
-  try {
-    // A user-triggered check must replace any in-flight background snapshot that may predate the update.
-    const [, componentRefresh] = await Promise.allSettled([checkUpdates({ silent: true }), componentUpdates.refresh({ force: true })]);
-    if (componentRefresh.status === "fulfilled" && componentRefresh.value) syncToolbarComponentUpdateState();
-    const remaining = 500 - (Date.now() - startedAt);
-    if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
-  } finally {
-    manualCheckingAllUpdates.value = false;
-  }
-}
-
-function openDriverStoreFromUpdate(target?: DriverStoreTab) {
-  finishCloseSettingsPage();
-  openDriverStorePage(target);
-}
-
-function handleToolbarUpdateClick() {
-  showUpdateDialog.value = true;
-  void checkAllUpdates();
-}
-
-function syncToolbarComponentUpdateState() {
-  agentDriverUpdateCount.value = componentUpdates.driverUpdateCount.value;
-  applyMcpStatus(componentUpdates.mcpUpdateAvailable.value);
-  // 组件更新是权威来源；丢弃轮询期间发出的旧快照，避免其晚返回后重新点亮更新入口。
-  invalidateMcpUpdateStatus();
-}
-
-function handleComponentUpdatesChanged() {
-  void componentUpdates.refresh({ force: true }).then((refreshed) => {
-    if (refreshed) syncToolbarComponentUpdateState();
-  });
-}
-
-function pluginUpdateBlockMessage(block: PluginUpdateBlock): string {
-  if (block.reason === "connections") return `${block.pluginName}: ${t("pluginPlatform.updateBlockedByConnections", { labels: block.connections })}`;
-  const key = block.reason === "operations" ? "pluginPlatform.updateBlockedByOperations" : "pluginPlatform.updateInProgress";
-  return `${block.pluginName}: ${t(key)}`;
-}
-
-function reportComponentUpdateResult(result: Awaited<ReturnType<typeof componentUpdates.installCategory>>) {
-  const updatedComponents = [result.drivers > 0 ? t("settings.updateDrivers") : "", result.jdbc ? t("settings.updateJdbc") : "", result.mcp ? t("settings.updateMcp") : "", result.plugins > 0 ? t("settings.updatePlugins") : ""].filter(Boolean);
-  // Only a clean refresh is authoritative; a failed registry check must not clear stale toolbar state.
-  if (result.failed.length === 0) syncToolbarComponentUpdateState();
-  if (result.plugins > 0) notifyComponentPluginsUpdated();
-  if (result.drivers > 0 || result.jdbc) notifyComponentDriverUpdatesChanged();
-  if (updatedComponents.length) toast(t("updates.componentsAutoUpdated", { components: updatedComponents.join(t("updates.componentListSeparator")) }));
-  if (result.blockedDrivers.length) {
-    toast(t("driverStore.driverUpdateBlocked", { labels: updateBlockerLabels(result.blockedDrivers).join(", ") }), 8000);
-  } else if (result.skippedDrivers > 0) toast(t("updates.componentsAutoUpdateSkipped"), 6000);
-  const otherFailureCount = result.failed.length - result.blockedPlugins.length;
-  const failureMessages = [result.blockedPlugins.map(pluginUpdateBlockMessage).join("\n"), otherFailureCount > 0 ? t("updates.componentsAutoUpdateFailed", { count: otherFailureCount }) : ""].filter(Boolean);
-  if (failureMessages.length) toast(failureMessages.join("\n"), 8000);
-
-  if (
-    shouldCloseUpdateCenterAfterComponentUpdate({
-      failedCount: result.failed.length,
-      skippedDriverCount: result.skippedDrivers,
-      hasAppUpdate: hasUpdateAvailable.value,
-      remainingComponentUpdateCount: componentUpdates.totalUpdateCount.value,
-    })
-  ) {
-    showUpdateDialog.value = false;
-  }
-}
-
-async function rememberComponentUpdatesForRestartedApp(plan: PendingComponentUpdatePlan = { kind: "auto" }) {
-  const fromVersion = appVersion.value || updateInfo.value?.current_version || (await api.getAppVersion().catch(() => ""));
-  return markPendingComponentUpdatesAfterAppUpdate(fromVersion, updateInfo.value?.latest_version || "", plan);
-}
-
-async function consumePendingComponentUpdatesAfterRestart() {
-  const currentVersion = await api.getAppVersion().catch(() => "");
-  if (currentVersion && !appVersion.value) appVersion.value = currentVersion;
-  const pending = takePendingComponentUpdatesAfterAppRestart(currentVersion);
-  if (!pending) return;
-  // 丢弃重启过程中发出的后台 MCP 轮询：它们可能读到升级前快照，晚返回后会覆盖权威结果。
-  invalidateMcpUpdateStatus();
-  reportComponentUpdateResult(await runPendingComponentUpdatePlan(pending, componentUpdates));
-}
-
-async function installDownloadedUpdateWithComponentUpdates() {
-  await rememberComponentUpdatesForRestartedApp();
-  await installDownloadedUpdate();
-}
-
-async function restartAppWithComponentUpdates() {
-  await rememberComponentUpdatesForRestartedApp();
-  await restartApp();
-}
-
-function installComponentUpdates(category: ComponentUpdateCategory) {
-  return componentUpdates.installCategory(category).then(reportComponentUpdateResult);
-}
-
-function availableComponentUpdateCategories(): ComponentUpdateCategory[] {
-  const categories: ComponentUpdateCategory[] = [];
-  if (toolbarDriverUpdateCount.value > 0) categories.push("drivers");
-  if (toolbarJdbcUpdateAvailable.value) categories.push("jdbc");
-  if (toolbarMcpUpdateAvailable.value) categories.push("mcp");
-  if (componentUpdates.pluginUpdateCount.value > 0) categories.push("plugins");
-  return categories;
-}
-
-function continueAppUpdateWithComponents(categories: ComponentUpdateCategory[]) {
-  return continuePreparedAppUpdate({
-    hasComponentUpdates: categories.length > 0,
-    restartOnly: updateReady.value,
-    rememberComponentUpdates: () => rememberComponentUpdatesForRestartedApp({ kind: "manual", categories }),
-    installComponents: async () => {
-      reportComponentUpdateResult(await componentUpdates.installCategories(categories));
-    },
-    installDownloadedUpdate,
-    restartApp,
-  });
-}
-
-async function updateAllAvailable() {
-  if (updatingAllUpdates.value) return;
-  updatingAllUpdates.value = true;
-  showUpdateDialog.value = true;
-  try {
-    const categories = availableComponentUpdateCategories();
-    const action = resolveUpdateAllAction({
-      hasAppUpdate: hasUpdateAvailable.value && isDesktop,
-      appUpdateCanInstall: canDownloadAndInstallUpdate(updateInfo.value, isDesktop),
-      appUpdatePrepared: updateDownloaded.value || updateReady.value,
-      hasComponentUpdates: categories.length > 0,
-    });
-    if (action === "none") return;
-    if (action === "update-components") {
-      reportComponentUpdateResult(await componentUpdates.installCategories(categories));
-      return;
-    }
-    if (action === "install-app") return continueAppUpdateWithComponents(categories);
-    if (action === "download-app") await downloadUpdateInBackground();
-    if (updateDownloaded.value || updateReady.value) await continueAppUpdateWithComponents(categories);
-  } finally {
-    updatingAllUpdates.value = false;
-  }
-}
 const hasSqlFileConnections = computed(() => connectionStore.connections.some((c) => supportsSqlFileExecution(c.db_type)));
 const welcomePageMode = computed(() => (settingsStore.isEditorSettingsLoaded ? settingsStore.editorSettings.welcomePageMode : "workspace"));
 const queryEditorDdlDatabaseType = computed(() => {
@@ -2002,7 +1617,6 @@ watch(
     }
     if (id) activateQuerySurface();
     else if (previousId) activateOpenSpecialPageFallback();
-    if (id && pluginCenterActive.value) pluginCenterActive.value = false;
     const tab = id ? queryStore.tabs.find((candidate) => candidate.id === id) : undefined;
     const selection = tab?.editorSelection;
     selectedSql.value = tab && selection && selection.anchor !== selection.head ? tab.sql.slice(Math.min(selection.anchor, selection.head), Math.max(selection.anchor, selection.head)) : "";
@@ -2016,8 +1630,6 @@ const sourceNavigationIdentity = new Map<string, SourceNavigationIdentity>();
 function currentGlobalNavigationEntry(): GlobalNavigationEntry | null {
   let surface: GlobalNavigationSurface | null = null;
   if (showSettingsPage.value) surface = "settings";
-  else if (showDriverStore.value) surface = "driverStore";
-  else if (showPluginCenter.value) surface = "pluginCenter";
   else if (queryStore.activeTabId) surface = "query";
   if (!surface) return null;
   const tab = surface === "query" ? activeTab.value : undefined;
@@ -2071,7 +1683,6 @@ watch(
       queryStore.activeTabId,
       showSettingsPage.value,
       showDriverStore.value,
-      showPluginCenter.value,
       activeTab.value?.mode,
       activeTab.value?.tableInfoTab,
       activeTab.value?.sourceView,
@@ -2544,7 +2155,6 @@ function resetPendingAppClose() {
 }
 
 async function finishPendingAppClose(action: AppCloseAction) {
-  if (isUpdatePreparationActive()) return;
   if (action === "quit" && !aiRunsQuitConfirmed && blockingAiRunCount.value > 0) {
     pendingAppCloseAction.value = action;
     showAiRunsClosePrompt.value = true;
@@ -2634,7 +2244,7 @@ function continuePendingAppCloseAfterSave() {
 }
 
 function requestAppClose(action: AppCloseAction, options: AppCloseRequestOptions = {}) {
-  if (pendingAppCloseAction.value || isQuitPrepared.value || isUpdatePreparationActive()) return;
+  if (pendingAppCloseAction.value || isQuitPrepared.value) return;
   if (isDesktop && !isDetachedWindowContext && !queryStore.isOpenTabsLoaded) {
     if (action === "quit") cancelAppQuit();
     return;
@@ -3353,37 +2963,6 @@ async function openPendingAiConfigLinks() {
   }
 }
 
-const pluginCenterInstallRequest = ref<{ id: number; url: string } | null>(null);
-let pluginInstallDeepLinkId = 0;
-
-async function openPluginInstallDeepLink(url: string) {
-  try {
-    const draft = parsePluginInstallDeepLink(url);
-    if (!draft) return;
-    pluginCenterInstallRequest.value = { id: ++pluginInstallDeepLinkId, url: draft.url };
-    openPluginCenterPage();
-  } catch (e: any) {
-    toast(
-      t("pluginPlatform.deepLinkInvalid", {
-        message: e?.message || String(e),
-      }),
-      5000,
-    );
-  }
-}
-
-async function openPendingPluginInstallLinks() {
-  if (!isTauriRuntime()) return;
-  try {
-    const links = await api.pendingOpenPluginInstallLinks();
-    for (const link of links) {
-      await openPluginInstallDeepLink(link);
-    }
-  } catch {
-    /* ignore startup deep-link probing errors */
-  }
-}
-
 function setConnectionDialogOpen(value: boolean, options?: { restoreFocus?: boolean }) {
   showConnectionDialog.value = value;
   if (!value) {
@@ -3876,16 +3455,6 @@ function changeActiveSchema(tabId: string, schema: string | undefined) {
   // 工具栏选择是显式执行作用域：SQL Server 未限定表名会按它改写（#8951）。
   queryStore.updateSchema(tab.id, schema, { schemaQualifiesSql: true });
   if (tab.externalSqlPath) rememberExternalSqlFileTarget(tab.externalSqlPath, { connectionId: tab.connectionId, database: tab.database, catalog: tab.catalog, schema });
-}
-
-function openGitHub() {
-  openUrl("https://github.com/t8y2/dbx");
-}
-function openMcpGuide() {
-  openUrl("https://dbxio.com/cn/docs/mcp");
-}
-function openDbxWebsite() {
-  openUrl("https://dbxio.com");
 }
 
 function setSidebarOpen(open: boolean) {
@@ -4494,7 +4063,6 @@ function activateQueryTab(tabId: string): boolean {
   dispatchBeforeTabSwitch(tabId);
   if (!queryStore.activateTab(tabId)) return false;
   activateQuerySurface();
-  pluginCenterActive.value = false;
   isHistoryPanelMaximized.value = false;
   isAiPanelMaximized.value = false;
   return true;
@@ -4520,8 +4088,6 @@ function isGlobalNavigationEntryAvailable(candidate: GlobalNavigationEntry): boo
     return Boolean(candidate.tabId && queryStore.tabs.some((tab) => tab.id === candidate.tabId));
   }
   if (candidate.surface === "settings") return settingsPageTabOpen.value;
-  if (candidate.surface === "driverStore") return driverStoreTabOpen.value;
-  if (candidate.surface === "pluginCenter") return pluginCenterTabOpen.value;
   return false;
 }
 
@@ -4554,14 +4120,6 @@ async function completeGlobalNavigation(entry: GlobalNavigationEntry, previousHi
       restoreQuery: (target) => restoreQueryNavigationEntry(target, isCurrent, accept),
       activateSettings: () => {
         activateSettingsPage();
-        accept();
-      },
-      activateDriverStore: () => {
-        openDriverStorePage();
-        accept();
-      },
-      activatePluginCenter: () => {
-        openPluginCenterPage();
         accept();
       },
     });
@@ -4791,7 +4349,6 @@ function focusSearchInAuxiliarySurface(target: Element | null): boolean {
     const selector = driverStoreActiveTab.value === "jdbc" ? "[data-driver-store-jdbc-search]" : "[data-driver-store-agent-search]";
     return focusSearchInput(selector);
   }
-  if (showPluginCenter.value) return focusSearchInput("[data-plugin-marketplace-search]");
 
   if (showAiPanel.value && target?.closest("[data-ai-assistant-root], [data-ai-conversation-search]")) {
     if (aiAssistantRef.value) return aiAssistantRef.value.focusSearch();
@@ -4864,8 +4421,6 @@ async function closeActiveSurface() {
   if (dismissOpenModalSurface()) return;
   if (showSettingsPage.value) {
     closeSettingsPage();
-  } else if (showPluginCenter.value) {
-    closePluginCenterPage();
   } else if (showDriverStore.value) {
     closeDriverStorePage();
   } else if (queryStore.activeTabId) {
@@ -4916,7 +4471,7 @@ async function handleKeydown(e: KeyboardEvent) {
   // normalized plain object keeps that to a cheap cache hit per key press.
   const shortcuts = normalizeShortcutSettings(settingsStore.editorSettings.shortcuts);
   if (showTabSwitcher.value) return;
-  if (isFocusWhereShortcut(e, shortcuts) && !showSettingsPage.value && !showPluginCenter.value && !showDriverStore.value) {
+  if (isFocusWhereShortcut(e, shortcuts) && !showSettingsPage.value && !showDriverStore.value) {
     const target = e.target instanceof Element ? e.target : null;
     if (!target?.closest('[role="dialog"], [role="alertdialog"]') && contentAreaRef.value?.focusWhere()) {
       e.preventDefault();
@@ -4924,7 +4479,7 @@ async function handleKeydown(e: KeyboardEvent) {
       return;
     }
   }
-  if (isEditTableStructureShortcut(e, shortcuts) && !showSettingsPage.value && !showPluginCenter.value && !showDriverStore.value) {
+  if (isEditTableStructureShortcut(e, shortcuts) && !showSettingsPage.value && !showDriverStore.value) {
     const target = e.target instanceof Element ? e.target : null;
     if (!target?.closest('[role="dialog"], [role="alertdialog"]') && !eventTargetAllowsNativeClipboard(e) && contentAreaRef.value?.openTableStructureEditor?.()) {
       e.preventDefault();
@@ -5035,7 +4590,7 @@ async function handleKeydown(e: KeyboardEvent) {
   }
   if (isFocusResultGridShortcut(e, shortcuts) || isFocusSqlEditorShortcut(e, shortcuts)) {
     const target = e.target instanceof Element ? e.target : null;
-    if (!showSettingsPage.value && !showPluginCenter.value && !showDriverStore.value && !target?.closest('[role="dialog"], [role="alertdialog"]')) {
+    if (!showSettingsPage.value && !showDriverStore.value && !target?.closest('[role="dialog"], [role="alertdialog"]')) {
       const focused = isFocusResultGridShortcut(e, shortcuts) ? contentAreaRef.value?.focusResultGrid() : contentAreaRef.value?.focusSqlEditor();
       if (focused) {
         e.preventDefault();
@@ -5141,13 +4696,12 @@ async function handleKeydown(e: KeyboardEvent) {
     return;
   }
   if (isSaveShortcut(e, shortcuts)) {
-    // The settings page, plugin center and driver store keep the previously active
-    // query tab activated, so the active tab alone cannot decide who Ctrl+S belongs
-    // to. Without the surface check the shortcut popped the save-SQL dialog on top of
+    // The settings page and driver store keep the previously active query tab
+    // activated, so the active tab alone cannot decide who Ctrl+S belongs to.
+    // Without the surface check the shortcut popped the save-SQL dialog on top of
     // the settings page and silently dropped the edited draft (#13020).
     const saveShortcutTarget = saveShortcutSurface({
       settingsPageOpen: showSettingsPage.value,
-      pluginCenterOpen: showPluginCenter.value,
       driverStoreOpen: showDriverStore.value,
       activeTabMode: activeTab.value?.mode ?? null,
       saveSqlDialogOpen: showSaveSqlDialog.value,
@@ -5342,22 +4896,11 @@ async function initApp() {
       .catch((e: any) => {
         toast(t("connection.loadFailed", { message: e?.message || String(e) }), 5000);
       });
-    await runPendingComponentUpdatesBeforePluginReconnect({
-      hasPendingComponentUpdates: () => !isDetachedWindowContext && hasPendingComponentUpdatesAfterAppRestart(),
-      prepareStartup: async () => {
-        await settingsStore.initDesktopSettings().catch(() => {});
-        if (isDesktop) {
-          updateWindowReady = true;
-          await initializeUpdatePreparation();
-          await initializeUpdater();
-        }
-      },
-      consumePendingComponentUpdates: consumePendingComponentUpdatesAfterRestart,
-      // Restored plugin tabs need the sidecar connection registry repopulated
-      // (see reconnectRestoredPluginTabs). It is fire-and-forget so a slow
-      // sidecar or interactive prompt never blocks startup.
-      reconnectRestoredPluginTabs: async () => queryStore.reconnectRestoredPluginTabs(),
-    });
+    await settingsStore.initDesktopSettings().catch(() => {});
+    // Restored plugin tabs need the sidecar connection registry repopulated
+    // (see reconnectRestoredPluginTabs). It is fire-and-forget so a slow
+    // sidecar or interactive prompt never blocks startup.
+    void queryStore.reconnectRestoredPluginTabs();
 
     void promptTemplateStore.init();
 
@@ -5406,16 +4949,6 @@ function handleContextMenu(e: MouseEvent) {
     console.debug("[contextmenu] Preventing default for:", target);
   }
   e.preventDefault();
-}
-
-function openDriverStoreFromEvent(event: Event) {
-  openDriverStorePage(((event as CustomEvent).detail as DriverStoreFocus | undefined) ?? null);
-}
-
-function runUpdateNotificationChecks() {
-  void refreshAgentDriverUpdateCount();
-  void refreshMcpUpdateStatus();
-  void componentUpdates.refresh();
 }
 
 // Backend-confirmed connection liveness losses (#4339). Registered through the forwarded
@@ -5499,11 +5032,9 @@ onMounted(async () => {
   console.log("[STARTUP] onMounted begin");
   const mountStart = performance.now();
   if (isDetachedWindowContext) {
-    await initializeUpdatePreparation();
     await setupDetachedWindowEvents();
     await initDetachedWindow()
       .then(() => {
-        updateWindowReady = true;
         aiPanelReady.value = true;
         window.addEventListener("focus", refreshDetachedAiConfigs);
       })
@@ -5527,7 +5058,7 @@ onMounted(async () => {
   window.addEventListener("keydown", handleTabSwitcherKeydownCapture, true);
   window.addEventListener("keydown", handleAuxiliarySearchKeydownCapture, true);
   unregisterCopyActiveResultShortcut = registerCopyActiveResultShortcut(() => ({
-    enabled: !showTabSwitcher.value && activeTab.value?.mode === "query" && !showSettingsPage.value && !showPluginCenter.value && !showDriverStore.value && !showConnectionDialog.value && (workspaceRendered() || isZenMode.value),
+    enabled: !showTabSwitcher.value && activeTab.value?.mode === "query" && !showSettingsPage.value && !showDriverStore.value && !showConnectionDialog.value && (workspaceRendered() || isZenMode.value),
     shortcuts: normalizeShortcutSettings(settingsStore.editorSettings.shortcuts),
     copyActiveResult: () => contentAreaRef.value?.copyActiveResult() ?? false,
   }));
@@ -5537,12 +5068,8 @@ onMounted(async () => {
   window.addEventListener("keyup", handleKeyup, true);
   window.addEventListener("blur", handleTabSwitcherWindowBlur);
   document.addEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
-  window.addEventListener("dbx-open-driver-store", openDriverStoreFromEvent);
-  window.addEventListener(COMPONENT_UPDATES_CHANGED_EVENT, handleComponentUpdatesChanged);
   window.addEventListener("dbx:activate-query-surface", activateQuerySurface);
-  window.addEventListener(MCP_CALL_HISTORY_OPEN_EVENT, openMcpCallHistory);
   window.addEventListener(OBJECT_BROWSER_SEARCH_FOCUS_EVENT, focusRequestedObjectBrowserSearch);
-  window.addEventListener("dbx-mcp-status-changed", handleMcpStatusChanged);
   window.addEventListener("dbx:ai-run-notify", handleAiRunNotify);
   if (isDesktop) {
     document.addEventListener("contextmenu", handleContextMenu);
@@ -5588,12 +5115,6 @@ onMounted(async () => {
   desktopOpenTabsRestorationBarrier = createOpenTabsRestorationBarrier();
   void initApp();
   setupFileDrop().catch(() => {});
-  setTimeout(() => {
-    runUpdateNotificationChecks();
-    if (!updateCheckTimer) {
-      updateCheckTimer = setInterval(runUpdateNotificationChecks, UPDATE_CHECK_INTERVAL_MS);
-    }
-  }, 10_000);
   api
     .getAppVersion()
     .then((v) => {
@@ -5605,7 +5126,6 @@ onMounted(async () => {
     void openPendingDbFiles();
     void openPendingConnectionLinks();
     void openPendingAiConfigLinks();
-    void openPendingPluginInstallLinks();
   });
   setupCloseActionPromptListener();
   void setupFloatingWindowEvents();
@@ -5613,8 +5133,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  disposeUpdater();
-  updatePreparation?.dispose();
   connectionLivenessUnlisten?.();
   connectionLivenessUnlisten = null;
   detachedEventUnlisteners.forEach((unlisten) => unlisten());
@@ -5623,9 +5141,6 @@ onUnmounted(() => {
   floatingEventUnlisteners = [];
   cleanupTauriListeners();
   cleanupCloseActionPromptListener();
-  if (updateCheckTimer) {
-    clearInterval(updateCheckTimer);
-  }
   window.removeEventListener("keydown", handleNativeSelectAll, true);
   modifierDoubleTapSearch.reset();
   window.removeEventListener("pointerdown", modifierDoubleTapSearch.cancel, true);
@@ -5641,12 +5156,8 @@ onUnmounted(() => {
   window.removeEventListener("blur", handleTabSwitcherWindowBlur);
   document.removeEventListener("visibilitychange", handleTabSwitcherVisibilityChange);
   tabSwitcherKeyboard.reset();
-  window.removeEventListener("dbx-open-driver-store", openDriverStoreFromEvent);
-  window.removeEventListener(COMPONENT_UPDATES_CHANGED_EVENT, handleComponentUpdatesChanged);
   window.removeEventListener("dbx:activate-query-surface", activateQuerySurface);
-  window.removeEventListener(MCP_CALL_HISTORY_OPEN_EVENT, openMcpCallHistory);
   window.removeEventListener(OBJECT_BROWSER_SEARCH_FOCUS_EVENT, focusRequestedObjectBrowserSearch);
-  window.removeEventListener("dbx-mcp-status-changed", handleMcpStatusChanged);
   window.removeEventListener("dbx:ai-run-notify", handleAiRunNotify);
   window.removeEventListener("focus", refreshDetachedAiConfigs);
   window.removeEventListener("beforeunload", handleWebBeforeUnload);
@@ -5691,17 +5202,7 @@ onUnmounted(() => {
           :sql-library-save-feedback-id="sqlLibrarySaveFeedbackId"
           :show-sql-file-panel="showSqlFilePanel"
           :show-driver-store="showDriverStore"
-          :show-plugin-center="showPluginCenter"
           :show-settings-page="showSettingsPage"
-          :checking-updates="checkingAllUpdates"
-          :has-update-available="toolbarHasUpdateAvailable"
-          :is-downloading-update="isDownloadingUpdate"
-          :download-progress="downloadProgress"
-          :update-version="updateInfo?.latest_version"
-          :update-ready-to-install="updateDownloaded"
-          :update-ready="updateReady"
-          :agent-driver-update-count="showDriverStoreUpdateBadge"
-          :has-mcp-update-available="showMcpSettingsUpdateBadge"
           :has-connections="connectionStore.connections.length > 0"
           :can-new-query="canCreateNewQuery"
           :has-sql-file-connections="hasSqlFileConnections"
@@ -5715,11 +5216,7 @@ onUnmounted(() => {
           @toggle-history="toggleRightSidebarPanel('history')"
           @toggle-sql-library="toggleRightSidebarPanel('sqlLibrary')"
           @toggle-sql-file-panel="toggleRightSidebarPanel('sqlFile')"
-          @open-github="openGitHub"
-          @open-settings="openSettings(showMcpSettingsUpdateBadge ? 'mcp' : 'appearance')"
-          @open-driver-store="openDriverStorePage"
-          @open-plugin-center="openPluginCenterPage()"
-          @check-updates="handleToolbarUpdateClick"
+          @open-settings="openSettings('appearance')"
           @immediate-sync="openImmediateSync"
           @open-transfer="dialogs.showTransferDialog.value = true"
           @open-sql-file="dialogs.showSqlFileDialog.value = true"
@@ -5727,7 +5224,6 @@ onUnmounted(() => {
           @open-schema-diff="dialogs.showSchemaDiffDialog.value = true"
           @open-data-compare="dialogs.showDataCompareDialog.value = true"
           @open-backups="openSettings('backups')"
-          @open-mcp-settings="openSettings('mcp')"
           @focus-workspace-window="tabWindowTransfer.focusWorkspaceWindow"
           @refresh-workspace-windows="tabWindowTransfer.refreshOtherTabWindows"
           @consolidate-workspace-windows="tabWindowTransfer.consolidateWorkspaceWindows"
@@ -5766,21 +5262,16 @@ onUnmounted(() => {
                 ref="appTabBarRef"
                 :driver-store-open="driverStoreTabOpen"
                 :driver-store-active="driverStoreActive"
-                :plugin-center-open="pluginCenterTabOpen"
-                :plugin-center-active="pluginCenterActive"
                 :settings-page-open="settingsPageTabOpen"
                 :settings-page-active="settingsStore.settingsPageActive"
-                :agent-driver-update-count="toolbarAgentDriverUpdateCount"
                 :detached-drop-target="detachedDropTargetTabId !== null"
                 :can-detach-tabs="isDesktop"
                 :tab-bar-width="tabBarWidth"
                 :tab-bar-collapsed="tabBarCollapsed"
                 @activate-driver-store="openDriverStorePage"
-                @activate-plugin-center="openPluginCenterPage(pluginCenterFocus)"
                 @activate-settings-page="activateSettingsPage"
                 @activate-tab="activateQueryTab"
                 @close-driver-store="closeDriverStorePage"
-                @close-plugin-center="closePluginCenterPage"
                 @close-settings-page="closeSettingsPage"
                 @save-tab="handleSaveTab"
                 @discard-tab-close="handleDiscardPendingTabClose"
@@ -5789,25 +5280,6 @@ onUnmounted(() => {
                 @cancel-tab-close="cancelPendingAppClose"
                 @detach-tab="detachTab"
               >
-                <DriverStorePage
-                  v-if="driverStoreTabOpen"
-                  v-show="driverStoreActive"
-                  v-model:active-tab="driverStoreActiveTab"
-                  class="flex-1 min-h-0"
-                  :update-notifications-enabled="settingsStore.editorSettings.autoUpdateDrivers"
-                  :focus-target="driverStoreFocus"
-                  @update-count-change="updateAgentDriverUpdateCount"
-                />
-                <PluginCenterPage
-                  v-if="pluginCenterTabOpen"
-                  v-show="pluginCenterActive"
-                  class="flex-1 min-h-0"
-                  :focus-target="pluginCenterFocus"
-                  :install-url-request="pluginCenterInstallRequest"
-                  @opened="activateMainContentSurface('query')"
-                  @new-connection="openPluginConnectionDialog"
-                  @plugin-runtime-replaced="refreshPluginWorkbenches"
-                />
                 <EditorSettingsPage
                   v-if="settingsPageTabOpen"
                   v-show="settingsStore.settingsPageActive"
@@ -5819,30 +5291,8 @@ onUnmounted(() => {
                   :navigation-request-id="settingsNavigationRequestId"
                   :ai-config-draft="settingsAiConfigDraft"
                   :ai-config-request-id="settingsAiConfigRequestId"
-                  :app-version="appVersion"
-                  :checking-updates="checkingAllUpdates"
-                  :updating-all-updates="updatingAllUpdates || componentUpdates.updating.value"
-                  :app-update-available="hasUpdateAvailable"
-                  :app-update-version="updateInfo?.latest_version"
-                  :driver-update-count="toolbarDriverUpdateCount"
-                  :jdbc-update-available="toolbarJdbcUpdateAvailable"
-                  :mcp-update-available="toolbarMcpUpdateAvailable"
-                  :plugin-update-count="componentUpdates.pluginUpdateCount.value"
                   class="flex-1 min-h-0"
                   @update:open="(open: boolean) => (open ? activateSettingsPage() : finishCloseSettingsPage())"
-                  @check-updates="checkAllUpdates"
-                  @update-all="updateAllAvailable"
-                  @open-update-center="handleToolbarUpdateClick"
-                  @open-driver-store="openDriverStoreFromUpdate"
-                  @open-plugin-center="
-                    finishCloseSettingsPage();
-                    openPluginCenterPage();
-                  "
-                  @open-cc-switch-plugin-center="
-                    closeSettingsPage();
-                    openPluginCenterPage({ pluginId: 'cc-switch' });
-                  "
-                  @open-mcp-settings="openSettings('mcp')"
                   @ai-config-deep-link-handled="settingsAiConfigDraft = null"
                   @logout="handleWebLogout"
                 />
@@ -5873,7 +5323,7 @@ onUnmounted(() => {
                 </DialogContent>
               </Dialog>
               <div
-                v-show="!driverStoreActive && !pluginCenterActive && !settingsStore.settingsPageActive"
+                v-show="!driverStoreActive && !settingsStore.settingsPageActive"
                 class="flex min-h-0 min-w-0 flex-1"
                 :class="activeTab?.mode === 'plugin-workbench' && isVerticalTabPlacement ? (settingsStore.editorSettings.tabPlacement === 'right' ? 'flex-row-reverse' : 'flex-row') : 'flex-col'"
               >
@@ -5893,7 +5343,7 @@ onUnmounted(() => {
                     @start-resize="startTabBarResize"
                     @toggle-collapse="toggleTabBarCollapsed"
                     :active-tab="activeTab ?? undefined"
-                    :show-tab-navigation="queryStore.tabs.length > 0 || settingsPageTabOpen || driverStoreTabOpen || pluginCenterTabOpen"
+                    :show-tab-navigation="queryStore.tabs.length > 0 || settingsPageTabOpen || driverStoreTabOpen"
                     :active-connection="activeConnection"
                     :tab-bar-width="tabBarWidth"
                     :tab-bar-collapsed="tabBarCollapsed"
@@ -6025,9 +5475,6 @@ onUnmounted(() => {
                         @new-query="newQuery"
                         @show-history="openRightSidebarPanel('history')"
                         @import-config="dialogs.onImportClick"
-                        @open-github="openGitHub"
-                        @open-mcp-guide="openMcpGuide"
-                        @open-website="openDbxWebsite"
                         @open-settings="openSettings('appearance', 'welcome-page-settings')"
                       />
                     </template>
@@ -6093,8 +5540,6 @@ onUnmounted(() => {
             <div class="h-full min-h-0 overflow-hidden rounded-[inherit]" @mousedown="rememberAuxiliarySearchSurface('history')">
               <div data-history-panel class="h-full min-h-0">
                 <QueryHistory
-                  :mcp-request="mcpHistoryRequest"
-                  @mcp-request-handled="mcpHistoryRequest = null"
                   :maximized="isHistoryPanelMaximized"
                   @toggle-maximize="isHistoryPanelMaximized = !isHistoryPanelMaximized"
                   :current-connection-id="activeTab?.connectionId"
@@ -6188,10 +5633,6 @@ onUnmounted(() => {
                 5000,
               )
           "
-          @open-driver-store="
-            setConnectionDialogOpen(false, { restoreFocus: false });
-            openDriverStorePage($event);
-          "
           @open-tunnel-profile-settings="
             setConnectionDialogOpen(false, { restoreFocus: false });
             openSettings('tunnels');
@@ -6217,48 +5658,6 @@ onUnmounted(() => {
           :cancel-target="cancelMultiDbTarget"
           :cancel-pending="cancelPendingMultiDbTarget"
           :source-offset="multiExecuteSourceOffset"
-        />
-        <UpdateDialog
-          v-if="showUpdateDialog"
-          v-model:open="showUpdateDialog"
-          :update-info="visibleUpdateInfo"
-          :update-check-message="updateCheckMessage"
-          :checking-updates="checkingUpdates"
-          :update-check-failed="updateCheckFailed"
-          :update-download-source="settingsStore.editorSettings.updateDownloadSource"
-          :is-downloading-update="isDownloadingUpdate"
-          :download-progress="downloadProgress"
-          :update-downloaded="updateDownloaded"
-          :update-downloaded-version="updateDownloadedVersion"
-          :is-preparing-update="isPreparingUpdate"
-          :is-installing-update="isInstallingUpdate"
-          :update-ready="updateReady"
-          :is-ignoring-update="isIgnoringUpdate"
-          :active-task-count="activeUpdateTaskCount"
-          :driver-updates="componentUpdates.driverUpdates.value"
-          :driver-batch-completed="componentUpdates.driverBatchCompleted.value"
-          :driver-batch-total="componentUpdates.driverBatchTotal.value"
-          :driver-progress-map="componentUpdates.driverProgressMap.value"
-          :jdbc-update="componentUpdates.jdbcPluginStatus.value"
-          :mcp-update="componentUpdates.mcpStatus.value"
-          :plugin-updates="componentUpdates.pluginUpdates.value"
-          :component-updates-loading="componentUpdates.loading.value"
-          :component-updates-error="componentUpdates.lastError.value"
-          :component-updates-updating="componentUpdates.updating.value"
-          :updating-component="componentUpdates.updatingCategory.value"
-          :is-updating-all="updatingAllUpdates || componentUpdates.updating.value"
-          @check-updates="checkAllUpdates"
-          @open-latest-release="openLatestRelease"
-          @change-download-source="changeUpdateDownloadSource"
-          @download-in-background="downloadUpdateInBackground"
-          @cancel-download="cancelDownload"
-          @install-downloaded="installDownloadedUpdateWithComponentUpdates"
-          @restart="restartAppWithComponentUpdates"
-          :ignored-release-version="ignoredReleaseVersion"
-          @ignore-version="ignoreCurrentVersion"
-          @restore-ignored-version="restoreIgnoredVersion"
-          @install-component-updates="installComponentUpdates"
-          @update-all="updateAllAvailable"
         />
         <ExternalSqlFileChangeDialog :prompt="externalSqlFilePrompt" @decide="externalSqlFileChanges.resolvePrompt" />
         <CloseActionPromptDialog v-if="isDesktop && showCloseActionPrompt" :open="showCloseActionPrompt" @update:open="handleCloseActionPromptOpenChange" @quit="chooseQuit" @minimize="chooseMinimize" />
@@ -6382,7 +5781,6 @@ onUnmounted(() => {
         :database-type="queryEditorDdlDatabaseType"
         :dialect="queryEditorDdlDialect"
       />
-      <McpSqlApprovalDialog v-if="isDesktop && !isDetachedWindowContext" />
       <QueryEditorObjectSourceDialog
         v-if="queryEditorObjectSourceTarget"
         v-model:open="showQueryEditorObjectSourceDialog"

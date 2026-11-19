@@ -3,30 +3,18 @@ import en from "./locales/en";
 import { safeLocalStorageGet } from "@/lib/backend/safeStorage";
 import { persistAppLocale } from "@/lib/app/appAppearance";
 
-export type Locale = "az" | "en" | "es" | "id" | "it" | "ja" | "ko" | "pt-BR" | "pl" | "ru" | "th" | "tr" | "zh-CN" | "zh-TW";
+export type Locale = "en" | "zh-CN";
 type LocaleMessages = Record<string, unknown>;
 type I18nGlobal = {
   locale: { value: Locale };
   setLocaleMessage: (locale: Locale, messages: LocaleMessages) => void;
 };
 
-const supportedLocales: Locale[] = ["az", "en", "es", "id", "it", "ja", "ko", "pt-BR", "pl", "ru", "th", "tr", "zh-CN", "zh-TW"];
+const supportedLocales: Locale[] = ["en", "zh-CN"];
 const defaultLocale: Locale = "en";
 const loadedLocales = new Set<Locale>([defaultLocale]);
 const localeLoaders: Record<Exclude<Locale, "en">, () => Promise<{ default: LocaleMessages }>> = {
-  az: () => import("./locales/az"),
-  es: () => import("./locales/es"),
-  id: () => import("./locales/id"),
-  it: () => import("./locales/it"),
-  ja: () => import("./locales/ja"),
-  ko: () => import("./locales/ko"),
-  "pt-BR": () => import("./locales/pt-BR"),
-  pl: () => import("./locales/pl"),
-  ru: () => import("./locales/ru"),
-  th: () => import("./locales/th"),
-  tr: () => import("./locales/tr"),
   "zh-CN": () => import("./locales/zh-CN"),
-  "zh-TW": () => import("./locales/zh-TW"),
 };
 
 export function normalizeLocale(value: string | null): Locale | null {
@@ -39,24 +27,8 @@ export function normalizeLocale(value: string | null): Locale | null {
 export function localeFromLanguageTag(value: string | null | undefined): Locale | null {
   if (!value) return null;
   const normalized = value.replace("_", "-").toLowerCase();
-  if (normalized === "zh" || normalized.startsWith("zh-")) {
-    if (normalized.includes("hant") || normalized.startsWith("zh-tw") || normalized.startsWith("zh-hk") || normalized.startsWith("zh-mo")) {
-      return "zh-TW";
-    }
-    return "zh-CN";
-  }
-  if (normalized === "az" || normalized.startsWith("az-")) return "az";
+  if (normalized === "zh" || normalized.startsWith("zh-")) return "zh-CN";
   if (normalized === "en" || normalized.startsWith("en-")) return "en";
-  if (normalized === "es" || normalized.startsWith("es-")) return "es";
-  if (normalized === "id" || normalized.startsWith("id-")) return "id";
-  if (normalized === "it" || normalized.startsWith("it-")) return "it";
-  if (normalized === "ja" || normalized.startsWith("ja-")) return "ja";
-  if (normalized === "ko" || normalized.startsWith("ko-")) return "ko";
-  if (normalized === "pt" || normalized.startsWith("pt-")) return "pt-BR";
-  if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
-  if (normalized === "ru" || normalized.startsWith("ru-")) return "ru";
-  if (normalized === "tr" || normalized.startsWith("tr-")) return "tr";
-  if (normalized === "th" || normalized.startsWith("th-")) return "th";
   return null;
 }
 

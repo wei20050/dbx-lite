@@ -6,8 +6,6 @@ describe("global navigation executor", () => {
     const handlers = {
       restoreQuery: vi.fn(async () => true),
       activateSettings: vi.fn(),
-      activateDriverStore: vi.fn(),
-      activatePluginCenter: vi.fn(),
     };
     await restoreGlobalNavigationEntry({ id: "q", surface: "query", tabId: "tab-1" }, handlers);
     await restoreGlobalNavigationEntry({ id: "s", surface: "settings" }, handlers);
@@ -16,7 +14,7 @@ describe("global navigation executor", () => {
   });
 
   it("reports a closed query tab as unrestorable", async () => {
-    const restored = await restoreGlobalNavigationEntry({ id: "q", surface: "query", tabId: "closed" }, { restoreQuery: async () => false, activateSettings: () => {}, activateDriverStore: () => {}, activatePluginCenter: () => {} });
+    const restored = await restoreGlobalNavigationEntry({ id: "q", surface: "query", tabId: "closed" }, { restoreQuery: async () => false, activateSettings: () => {} });
     expect(restored).toBe(false);
   });
 });

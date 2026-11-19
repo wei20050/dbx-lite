@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listeners = new Map<string, (event: { payload: unknown }) => void>();
 const unlisten = vi.fn();
-const reloadFromDisk = vi.fn();
 const focusMocks = vi.hoisted(() => ({ isFocused: vi.fn(async () => true) }));
 let listenerRegistrationBarrier: Promise<void> | null = null;
 const listen = vi.fn(async (event: string, handler: (event: { payload: unknown }) => void) => {
@@ -19,14 +18,6 @@ vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ isFocused: focusMocks.isFocused }),
 }));
 
-vi.mock("@/stores/connectionStore", () => ({
-  useConnectionStore: () => ({ connections: [], initFromDisk: vi.fn(), reloadFromDisk, getConfig: vi.fn(), ensureConnected: vi.fn() }),
-}));
-
-vi.mock("@/stores/queryStore", () => ({
-  useQueryStore: () => ({ createTab: vi.fn(), showExecutedQueryResults: vi.fn() }),
-}));
-
 import { useTauriEvents } from "@/composables/useTauriEvents";
 
 describe("useTauriEvents", () => {
@@ -34,7 +25,6 @@ describe("useTauriEvents", () => {
     listeners.clear();
     listen.mockClear();
     unlisten.mockClear();
-    reloadFromDisk.mockClear();
     listenerRegistrationBarrier = null;
     focusMocks.isFocused.mockResolvedValue(true);
   });
@@ -68,8 +58,6 @@ describe("useTauriEvents", () => {
 
     expect(setupResolved).toBe(true);
     expect(listeners.has("dbx-open-connection-links")).toBe(true);
-    await listeners.get("mcp-reload-connections")!({ payload: undefined });
-    expect(reloadFromDisk).toHaveBeenCalledOnce();
   });
 
   it("routes the native macOS close-tab menu event to the active surface", async () => {

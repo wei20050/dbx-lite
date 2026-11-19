@@ -397,69 +397,54 @@ async function pingFloatingWebview(label: string, from: string): Promise<boolean
 
 async function createFloatingChild(label: string, request: OpenFloatingWindowRequest, creatorLabel: string, placement: { x: number; y: number }, size: { width: number; height: number }): Promise<void> {
   const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
-  // Loaded lazily: the module pulls the i18n singleton in, which this window-only
-  // path has no other use for.
-  const { assertUpdateAllowsInteraction, beginUpdateSensitiveOperation } = await import("@/lib/app/updatePreparation");
-  assertUpdateAllowsInteraction();
-  let finishOperation: (() => void) | undefined;
-  try {
-    finishOperation = beginUpdateSensitiveOperation();
-    // Deliberately the same creation shape as the proven detached-tab windows:
-    // url/size/position/decorations/visibility only, with the widget chrome
-    // applied afterwards through setters. This is the shape verified to receive
-    // real OS mouse input (the drag acceptance presses and moves the widget with
-    // native input); richer creation-time option sets were not.
-    const child = new WebviewWindow(label, {
-      url: floatingWindowUrl(request.pluginId, request.contributionId, request.context, creatorLabel),
-      title: request.title ?? "DBX",
-      width: size.width,
-      height: size.height,
-      minWidth: FLOATING_MIN_WIDTH_PX,
-      minHeight: FLOATING_MIN_HEIGHT_PX,
-      x: placement.x,
-      y: placement.y,
-      resizable: request.resizable === true,
-      visible: false,
-      decorations: false,
-      center: false,
-    });
+  // Deliberately the same creation shape as the proven detached-tab windows:
+  // url/size/position/decorations/visibility only, with the widget chrome
+  // applied afterwards through setters. This is the shape verified to receive
+  // real OS mouse input (the drag acceptance presses and moves the widget with
+  // native input); richer creation-time option sets were not.
+  const child = new WebviewWindow(label, {
+    url: floatingWindowUrl(request.pluginId, request.contributionId, request.context, creatorLabel),
+    title: request.title ?? "DBX",
+    width: size.width,
+    height: size.height,
+    minWidth: FLOATING_MIN_WIDTH_PX,
+    minHeight: FLOATING_MIN_HEIGHT_PX,
+    x: placement.x,
+    y: placement.y,
+    resizable: request.resizable === true,
+    visible: false,
+    decorations: false,
+    center: false,
+  });
 
-    // A caller timeout does not prove native window creation has stopped, so the
-    // reservation is held until a native terminal event arrives (same reasoning
-    // as the detached-tab creator).
-    const finishNativeCreation = beginUpdateSensitiveOperation();
-    await new Promise<void>((resolve, reject) => {
-      let settled = false;
-      let timeout: ReturnType<typeof setTimeout> | undefined;
-      const settle = (finish: () => void) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        finishNativeCreation();
-        finish();
-      };
-      void child.once("tauri://created", () => settle(resolve));
-      void child.once("tauri://error", (event) => {
-        const message = typeof event?.payload === "string" ? event.payload : "Floating window creation failed";
-        console.error("[DBX][plugin-floating:create:error]", message);
-        settle(() => reject(new Error(message)));
-      });
-      timeout = setTimeout(() => settle(() => reject(new Error("Timed out while creating the floating plugin window"))), FLOATING_CREATE_TIMEOUT_MS);
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const settle = (finish: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      finish();
+    };
+    void child.once("tauri://created", () => settle(resolve));
+    void child.once("tauri://error", (event) => {
+      const message = typeof event?.payload === "string" ? event.payload : "Floating window creation failed";
+      console.error("[DBX][plugin-floating:create:error]", message);
+      settle(() => reject(new Error(message)));
     });
-    // Widget chrome after creation: a floating widget owns no taskbar button and
-    // stays above other applications. Each is best-effort — failing degrades to a
-    // taskbar entry or a coverable window, never to a lost widget.
-    if (request.alwaysOnTop !== false) await child.setAlwaysOnTop(true).catch(() => undefined);
-    if (request.skipTaskbar !== false) await child.setSkipTaskbar(true).catch((error: unknown) => console.error("[DBX][plugin-floating:skip-taskbar]", error));
-    await child.show().catch((error: unknown) => console.error("[DBX][plugin-floating:show]", error));
-    // setPosition speaks the same (outer) coordinate space as the position we
-    // persist on drag end; the creation-time x/y do not, once a shadow frame is
-    // in play, and restoring through them drifts by the frame thickness.
-    const { PhysicalPosition } = await import("@tauri-apps/api/dpi");
-    await child.setPosition(new PhysicalPosition(Math.round(placement.x), Math.round(placement.y))).catch(() => undefined);
-  } finally {
-    finishOperation?.();
-  }
+    timeout = setTimeout(() => settle(() => reject(new Error("Timed out while creating the floating plugin window"))), FLOATING_CREATE_TIMEOUT_MS);
+  });
+  // Widget chrome after creation: a floating widget owns no taskbar button and
+  // stays above other applications. Each is best-effort — failing degrades to a
+  // taskbar entry or a coverable window, never to a lost widget.
+  if (request.alwaysOnTop !== false) await child.setAlwaysOnTop(true).catch(() => undefined);
+  if (request.skipTaskbar !== false) await child.setSkipTaskbar(true).catch((error: unknown) => console.error("[DBX][plugin-floating:skip-taskbar]", error));
+  await child.show().catch((error: unknown) => console.error("[DBX][plugin-floating:show]", error));
+  // setPosition speaks the same (outer) coordinate space as the position we
+  // persist on drag end; the creation-time x/y do not, once a shadow frame is
+  // in play, and restoring through them drifts by the frame thickness.
+  const { PhysicalPosition } = await import("@tauri-apps/api/dpi");
+  await child.setPosition(new PhysicalPosition(Math.round(placement.x), Math.round(placement.y))).catch(() => undefined);
 }
 
 /**

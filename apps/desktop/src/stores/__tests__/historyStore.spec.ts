@@ -96,8 +96,8 @@ describe("historyStore", () => {
   it("clears only the requested history source", async () => {
     vi.mocked(api.clearHistoryBySource).mockResolvedValue(undefined);
     const store = useHistoryStore();
-    await store.clear("mcp");
-    expect(api.clearHistoryBySource).toHaveBeenCalledWith("mcp");
+    await store.clear("sql");
+    expect(api.clearHistoryBySource).toHaveBeenCalledWith("sql");
     expect(api.clearHistory).not.toHaveBeenCalled();
     expect(api.loadHistoryConnectionOptions).toHaveBeenCalled();
   });

@@ -366,15 +366,6 @@
       "dialect": "SQL Server",
       "runtimeMode": "native",
       "mcpMode": "bridge",
-      "driverProfiles": [
-        {
-          "profile": "sqlserver-legacy",
-          "agentKey": "sqlserver-legacy",
-          "label": "SQL Server legacy compatibility component",
-          "storeVisible": true,
-          "storeOrder": 47
-        }
-      ],
       "singleConnectionPool": false,
       "metadataConnectionScoped": false,
       "skipTcpProbe": false,
@@ -408,20 +399,9 @@
     {
       "dbType": "mongodb",
       "transferSupportLevel": "best-effort",
-      "label": "MongoDB (Legacy)",
-      "runtimeMode": "agent",
+      "label": "MongoDB",
+      "runtimeMode": "native",
       "mcpMode": "bridge",
-      "agentKey": "mongodb",
-      "driverStoreVisible": true,
-      "driverStoreOrder": 41,
-      "driverProfiles": [
-        {
-          "profile": "mongodb-legacy",
-          "agentKey": "mongodb",
-          "label": "MongoDB (Legacy)",
-          "storeVisible": false
-        }
-      ],
       "singleConnectionPool": true,
       "metadataConnectionScoped": false,
       "skipTcpProbe": true,

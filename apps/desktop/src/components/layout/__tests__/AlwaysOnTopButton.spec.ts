@@ -63,9 +63,6 @@ vi.mock("@/components/layout/WindowControls.vue", () => ({
 vi.mock("@/components/export/ExportProgressPopover.vue", () => ({
   default: { name: "ExportProgressPopoverStub", template: `<div />` },
 }));
-vi.mock("@/components/layout/ToolbarUpdateIcon.vue", () => ({
-  default: { name: "ToolbarUpdateIconStub", template: `<span />` },
-}));
 
 import AppToolbar from "../AppToolbar.vue";
 import DetachedTabHeader from "../DetachedTabHeader.vue";
@@ -129,7 +126,6 @@ const toolbarProps = {
   sqlLibrarySaveFeedbackId: 0,
   showSqlFilePanel: false,
   showDriverStore: false,
-  showPluginCenter: false,
   showSettingsPage: false,
   checkingUpdates: false,
   hasUpdateAvailable: false,
@@ -222,28 +218,22 @@ describe("always-on-top button visibility", () => {
     unmount();
   });
 
-  it("exposes backup and MCP shortcuts from the more menu", async () => {
+  it("exposes backup shortcut from the more menu", async () => {
     const openBackups = vi.fn();
-    const openMcpSettings = vi.fn();
     const { host, unmount } = mount(AppToolbar, {
       ...toolbarProps,
       onOpenBackups: openBackups,
-      onOpenMcpSettings: openMcpSettings,
     });
     await settled();
     await nextTick();
 
     const backupButton = host.querySelector<HTMLButtonElement>('[data-toolbar-menu-item="database-backups"]');
-    const mcpButton = host.querySelector<HTMLButtonElement>('[data-toolbar-menu-item="mcp-settings"]');
 
     expect(backupButton).not.toBeNull();
-    expect(mcpButton).not.toBeNull();
 
     backupButton?.click();
-    mcpButton?.click();
 
     expect(openBackups).toHaveBeenCalledOnce();
-    expect(openMcpSettings).toHaveBeenCalledOnce();
 
     unmount();
   });

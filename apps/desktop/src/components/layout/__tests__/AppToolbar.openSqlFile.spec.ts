@@ -14,7 +14,6 @@ vi.mock("@/components/ui/tooltip", () => ({
 }));
 vi.mock("@/components/layout/WindowControls.vue", () => ({ default: { template: "<div />" } }));
 vi.mock("@/components/export/ExportProgressPopover.vue", () => ({ default: { template: "<div />" } }));
-vi.mock("@/components/layout/ToolbarUpdateIcon.vue", () => ({ default: { template: "<span />" } }));
 vi.mock("@/components/plugins/PluginShortcutToolbar.vue", () => ({ default: { template: "<div />" } }));
 
 import AppToolbar from "../AppToolbar.vue";
@@ -31,7 +30,6 @@ const defaultToolbarProps = {
   sqlLibrarySaveFeedbackId: 0,
   showSqlFilePanel: false,
   showDriverStore: false,
-  showPluginCenter: false,
   showSettingsPage: false,
   checkingUpdates: false,
   hasUpdateAvailable: false,

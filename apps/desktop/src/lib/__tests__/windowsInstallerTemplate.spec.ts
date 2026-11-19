@@ -7,15 +7,8 @@ const template = readFileSync(resolve(process.cwd(), "src-tauri/windows/nsis/ins
 const win7Config = JSON.parse(readFileSync(resolve(process.cwd(), "src-tauri/tauri.webview2-win7-fixed.conf.json"), "utf8"));
 const win7RuntimeScript = readFileSync(resolve(process.cwd(), ".github/scripts/prepare-webview2-win7-runtime.ps1"), "utf8");
 const win7PeAuditScript = readFileSync(resolve(process.cwd(), ".github/scripts/assert-win7-pe-compat.ps1"), "utf8");
-const win7LoaderAuditScript = readFileSync(resolve(process.cwd(), ".github/scripts/assert-webview2-win7-loader.ps1"), "utf8");
-const win7RuntimeProbeScript = readFileSync(resolve(process.cwd(), ".github/scripts/assert-webview2-win7-runtime.ps1"), "utf8");
-const win7InstallerAuditScript = readFileSync(resolve(process.cwd(), ".github/scripts/assert-win7-installer-content.ps1"), "utf8");
-const appCargoToml = readFileSync(resolve(process.cwd(), "src-tauri/Cargo.toml"), "utf8");
 const workspaceCargoToml = readFileSync(resolve(process.cwd(), "Cargo.toml"), "utf8");
-const appBuildScript = readFileSync(resolve(process.cwd(), "src-tauri/build.rs"), "utf8");
 const wryWebView2Source = readFileSync(resolve(process.cwd(), "vendor/wry/src/webview2/mod.rs"), "utf8");
-const ciWorkflow = readFileSync(resolve(process.cwd(), ".github/workflows/ci.yml"), "utf8");
-const releaseWorkflow = readFileSync(resolve(process.cwd(), ".github/workflows/release.yml"), "utf8");
 const fixedRuntimeConfig = JSON.parse(readFileSync(resolve(process.cwd(), "src-tauri/tauri.webview2-win7-fixed.conf.json"), "utf8"));
 const clientConfig = JSON.parse(readFileSync(resolve(process.cwd(), "src-tauri/tauri.conf.json"), "utf8"));
 
@@ -141,45 +134,7 @@ describe("Windows 7 fixed WebView2 runtime bundle", () => {
     expect(win7PeAuditScript).toContain("dumpbin.exe");
   });
 
-  it("audits the linked WebView2 loader in the final Win7 binary", () => {
-    expect(win7LoaderAuditScript).toContain('"WebView2: Failed to find the app exe path."');
-    expect(win7LoaderAuditScript).toContain('"WebView2: Failed to find the WebView2 client dll at:"');
-    expect(win7LoaderAuditScript).toContain('"WebView2: Failed to find an installed WebView2 runtime or non-stable Microsoft Edge installation."');
-    expect(win7LoaderAuditScript).toContain("GetEncoding(28591)");
-    expect(ciWorkflow).toContain("./.github/scripts/assert-webview2-win7-loader.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-webview2-win7-loader.ps1");
-  });
-
-  it("caches Win7 Rust compilation without wrapping C or C++ compilers", () => {
-    const releaseWin7Job = releaseWorkflow.slice(releaseWorkflow.indexOf("  build-windows-7-offline:"), releaseWorkflow.indexOf("  static-browser:"));
-    const ciWin7Job = ciWorkflow.slice(ciWorkflow.indexOf("  windows-win7-bundle:"), ciWorkflow.indexOf("  duckdb-windows-driver:"));
-
-    expect(releaseWin7Job).toContain("swatinem/rust-cache@v2");
-    expect(releaseWin7Job).not.toMatch(/RUSTC_WRAPPER|SCCACHE_|sccache/i);
-    for (const line of [
-      "RUSTC_WRAPPER: sccache",
-      "SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}",
-      "SCCACHE_GHA_VERSION: win7-webview2-1.0.902.49-v1",
-      'SCCACHE_IDLE_TIMEOUT: "0"',
-      "mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba",
-      'version: "v0.16.0"',
-    ]) {
-      expect(ciWin7Job).toContain(line);
-    }
-    expect(ciWin7Job).not.toMatch(/^\s+(?:CC|CXX):/m);
-    expect(releaseWin7Job).not.toContain("CARGO_PROFILE_RELEASE_");
-    expect(ciWin7Job).toContain('CARGO_PROFILE_RELEASE_LTO: "off"');
-    expect(ciWin7Job).toContain('CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "8"');
-  });
-
-  it("probes the fixed runtime through the Win7-compatible loader", () => {
-    expect(win7RuntimeProbeScript).toContain("GetAvailableCoreWebView2BrowserVersionString");
-    expect(win7RuntimeProbeScript).toContain('$ExpectedVersion = "109.0.1518.78"');
-    expect(win7RuntimeProbeScript).toContain("msedgewebview2.exe");
-    expect(ciWorkflow).toContain("./.github/scripts/assert-webview2-win7-runtime.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-webview2-win7-runtime.ps1");
-  });
-
+  
   it("passes the configured fixed-runtime folder to WebView2 discovery and creation", () => {
     expect(workspaceCargoToml).toContain('wry = { path = "vendor/wry" }');
     expect(wryWebView2Source).toContain('std::env::var_os("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER")');
@@ -190,23 +145,4 @@ describe("Windows 7 fixed WebView2 runtime bundle", () => {
     expect(wryWebView2Source).toContain("GetAvailableCoreWebView2BrowserVersionString(browser_executable_folder_ptr, &mut versioninfo)");
   });
 
-  it("audits the files produced by the silent Win7 installer", () => {
-    expect(win7InstallerAuditScript).toContain('"webview2-fixed-runtime\\msedgewebview2.exe"');
-    expect(win7InstallerAuditScript).toContain('"dbx.exe"');
-    expect(ciWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
-    expect(releaseWorkflow).toContain("./.github/scripts/assert-win7-installer-content.ps1");
   });
-
-  it("builds the Windows 7 executable with the production custom protocol", () => {
-    expect(appCargoToml).toContain('custom-protocol = ["tauri/custom-protocol"]');
-    expect(appBuildScript).toContain("CARGO_FEATURE_CUSTOM_PROTOCOL");
-    expect(appBuildScript).toContain("CARGO_CFG_TARGET_VENDOR");
-    expect(ciWorkflow).toContain("build --locked --package dbx --release --features custom-protocol");
-    expect(ciWorkflow).toContain("--target x86_64-win7-windows-msvc --timings");
-    expect(releaseWorkflow).toContain("--release --features custom-protocol --target x86_64-win7-windows-msvc");
-    expect(ciWorkflow).toContain("TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw");
-    expect(releaseWorkflow).toContain("TAURI_CONFIG = Get-Content src-tauri/tauri.webview2-win7-fixed.conf.json -Raw");
-    expect(ciWorkflow).toContain("target-feature=+crt-static");
-    expect(releaseWorkflow).toContain("target-feature=+crt-static");
-  });
-});

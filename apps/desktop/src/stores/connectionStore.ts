@@ -10,7 +10,6 @@ import { exactOracleTriggerMetadata, exactOracleTriggerNodeMetadata, oracleTrigg
 import { nativeJobAdminEngine } from "@/lib/database/nativeJobAdmin";
 import { supportsSchemaIndexManagement } from "@/lib/database/databaseObjectCapabilities";
 import { pagesTablePartitionsWithRootPage } from "@/lib/database/databaseFeatureSupport";
-import { notifyComponentUpdatesChanged } from "@/lib/updates/componentUpdateEvents";
 import type {
   ColumnInfo,
   CompletionAssistantCandidate,
@@ -210,9 +209,8 @@ import { limitRedisDatabaseList, normalizeRedisDatabaseAliases, redisDatabaseAli
 import { normalizeRedisKeyTemplates } from "@/lib/redis/redisKeyTemplates";
 import { appendAgentDriverUpdateHint, connectionUsesSsh, hasAgentDriverUpdate, hasInstalledAgentVersion, type AgentDriverInstallState } from "@/lib/connection/agentDriverInstallHint";
 import { appendConnectionErrorHints, isMysqlMissingPasswordFailure, isSqliteMissingEncryptionPasswordFailure } from "@/lib/connection/connectionErrorHints";
-import { connectionNeedsPasswordPrompt, pluginConnectionNeedsPasswordPrompt } from "@/lib/connection/connectionPassword";
+import { connectionNeedsPasswordPrompt } from "@/lib/connection/connectionPassword";
 import { isSavedCredential } from "@/lib/security/passwordViewer";
-import { createFrontendPluginRegistry } from "@/lib/plugins/frontendPlugin";
 import { appendVisibleDatabaseSelection } from "@/lib/connection/connectionVisibleDatabases";
 import { buildXuguTypeMemberNodes, isXuguTypeMemberContainer } from "@/lib/sidebar/xuguTypeMembers";
 import { isXuguPublicSynonymScope, isXuguSchedulerJobScope, isXuguSyntheticScope, sortXuguSchemaInfos, xuguSchemaDisplayName, XUGU_PUBLIC_SYNONYM_SCOPE, XUGU_SCHEDULER_JOB_SCOPE } from "@/lib/sidebar/xuguPublicSynonyms";
@@ -236,7 +234,7 @@ import { MetadataTaskLimiter } from "@/lib/metadata/metadataTaskLimiter";
 import { buildCustomTypeTreeChildren } from "@/lib/sidebar/customTypeTree";
 import { TreeNodeLoadRegistry, type TreeNodeLoadHandle } from "@/lib/metadata/treeNodeLoadHandle";
 import { buildXuguTablespaceChildren } from "@/lib/sidebar/xuguTablespaces";
-import i18n, { currentLocale } from "@/i18n";
+import i18n from "@/i18n";
 import { useToast } from "@/composables/useToast";
 import type { MqAdminConfig } from "@/types/mq";
 import { RABBITMQ_MQ_TENANT, resolveMqSystemKindFromConnection } from "@/lib/mq/mqConsoleDefaults";
@@ -5288,7 +5286,6 @@ export const useConnectionStore = defineStore("connection", () => {
     if (!requiresSqlServerLegacyCompatibilityComponent(config)) return;
     if (await api.isAgentInstalled(SQLSERVER_LEGACY_COMPATIBILITY_DRIVER_KEY)) return;
     await api.installAgent(SQLSERVER_LEGACY_COMPATIBILITY_DRIVER_KEY);
-    notifyComponentUpdatesChanged();
   }
 
   async function setDefaultDatabase(connectionId: string, database: string) {
@@ -5641,18 +5638,7 @@ export const useConnectionStore = defineStore("connection", () => {
    * no-prompt path keeps its microtask cadence.
    */
   async function pluginConnectionPasswordPromptNeeded(config: ConnectionConfig): Promise<boolean> {
-    if (config.db_type !== "plugin") return true;
-    if (!config.plugin_id || !config.plugin_connection_provider) return false;
-    try {
-      const registry = createFrontendPluginRegistry(await api.listPlugins(), currentLocale());
-      const provider = registry.listConnectionProviders().find((entry) => entry.plugin.manifest.id === config.plugin_id && entry.contribution.id === config.plugin_connection_provider);
-      if (!provider) return false;
-      return pluginConnectionNeedsPasswordPrompt(provider.contribution.fields, config.external_config);
-    } catch {
-      // Manifest unavailable: keep the pre-manifest behavior (prompt) instead of
-      // silently connecting a connection that may genuinely need a password.
-      return true;
-    }
+    return config.db_type !== "plugin";
   }
 
   async function persistRememberedConnectionPassword(config: ConnectionConfig, rememberPassword: boolean, expectedConfigFingerprint: string, localAttempt: number): Promise<string | undefined> {
@@ -11348,8 +11334,8 @@ export const useConnectionStore = defineStore("connection", () => {
     }, 300);
   }
 
-  /** Read the persisted layout once and adopt it when another process (MCP
-   *  server, CLI, another window) rewrote it. Exported through the store so the
+  /** Read the persisted layout once and adopt it when another process (CLI or
+   *  another window) rewrote it. Exported through the store so the
    *  ordering rules below are covered by a spec instead of by a live timer.
    *
    *  A poll never wins over a local edit: it is skipped while a persist is

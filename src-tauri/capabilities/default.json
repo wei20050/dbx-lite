@@ -60,7 +60,6 @@
     "fs:allow-open",
     "fs:allow-read",
     "shell:allow-open",
-    "updater:default",
     "window-state:default"
   ]
 }

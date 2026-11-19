@@ -1,7 +1,7 @@
 import { evaluatePluginCommandConditions, type FrontendPluginRegistry } from "./frontendPlugin";
 import type { PluginCommandContribution } from "@/types/database";
 
-export type PluginShortcutPosition = "left-top" | "left-bottom" | "right-top" | "right-bottom" | "sidebar-bottom" | "toolbar" | "plugin-center";
+export type PluginShortcutPosition = "left-top" | "left-bottom" | "right-top" | "right-bottom" | "sidebar-bottom" | "toolbar";
 export interface PluginShortcutSettings {
   enabled: boolean;
   showSettingsEntry: boolean;
@@ -19,7 +19,7 @@ export function normalizePluginShortcutSettings(value: unknown): PluginShortcutS
   return {
     enabled: typeof input.enabled === "boolean" ? input.enabled : true,
     showSettingsEntry: typeof input.showSettingsEntry === "boolean" ? input.showSettingsEntry : true,
-    position: position === "left" ? "left-top" : position === "left-top" || position === "left-bottom" || position === "right-bottom" || position === "sidebar-bottom" || position === "toolbar" || position === "plugin-center" ? position : "right-top",
+    position: position === "left" ? "left-top" : position === "left-top" || position === "left-bottom" || position === "right-bottom" || position === "sidebar-bottom" || position === "toolbar" ? position : "right-top",
     order: strings(input.order),
     hiddenPluginIds: strings(input.hiddenPluginIds),
     sidebarHeight: typeof input.sidebarHeight === "number" && Number.isFinite(input.sidebarHeight) && input.sidebarHeight > 0 ? input.sidebarHeight : null,

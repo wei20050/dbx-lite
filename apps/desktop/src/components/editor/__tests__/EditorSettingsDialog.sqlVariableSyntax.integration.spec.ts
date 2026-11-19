@@ -115,10 +115,6 @@ vi.mock("@/components/ui/select", async () => {
   };
 });
 
-vi.mock("@/components/settings/ChangelogPanel.vue", async () => {
-  const { defineComponent } = await import("vue");
-  return { default: defineComponent({ setup: () => () => null }) };
-});
 
 const hoisted = vi.hoisted(() => ({
   savedEditorSettings: [] as any[],

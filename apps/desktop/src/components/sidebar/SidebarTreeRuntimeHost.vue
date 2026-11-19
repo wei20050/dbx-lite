@@ -156,7 +156,6 @@ import { buildColumnSelectTemplate, buildTableDeleteTemplate, buildTableInsertTe
 import SqlTemplateInsertRowsDialog from "@/components/sidebar/SqlTemplateInsertRowsDialog.vue";
 import { joinExportedDdls } from "@/lib/export/ddlExport";
 import { qualifiedTableName } from "@/lib/table/tableSelectSql";
-import { driverStoreFocusForInstallError } from "@/lib/connection/agentDriverInstallHint";
 import {
   canCreateConnectionNamespace,
   canCreateDatabaseNodeNamespace,
@@ -1032,7 +1031,6 @@ async function toggle(requestId = beginNavigationRequest()) {
       const errMsg = e?.message || String(e);
       if (errMsg.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
       toastConnectFailed(node.connectionId, e);
-      openDriverStoreForInstallError(errMsg, node);
     }
     return;
   }
@@ -1179,7 +1177,6 @@ async function toggle(requestId = beginNavigationRequest()) {
       const errMsg = e?.message || String(e);
       if (errMsg.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
       toastConnectFailed(node.connectionId, e);
-      openDriverStoreForInstallError(errMsg);
     }
     return;
   }
@@ -1367,7 +1364,6 @@ async function toggle(requestId = beginNavigationRequest()) {
     const errMsg = e?.message || String(e);
     if (errMsg.includes(CONNECTION_ATTEMPT_CANCELLED_MESSAGE)) return;
     toastConnectFailed(node.connectionId, e);
-    openDriverStoreForInstallError(errMsg);
   }
 }
 
@@ -1452,12 +1448,6 @@ function refreshActiveKvBrowserAfterOpen(mode: "etcd" | "zookeeper" | "consul", 
   void nextTick(() => {
     window.dispatchEvent(new CustomEvent("dbx-refresh-active-kv-browser", { detail: { mode, connectionId } }));
   });
-}
-
-function openDriverStoreForInstallError(errMsg: string, node: TreeNode = activeNode.value) {
-  const config = node.connectionId ? connectionStore.getConfig(node.connectionId) : undefined;
-  const focus = driverStoreFocusForInstallError(errMsg, config?.db_type, config?.driver_profile);
-  if (focus) window.dispatchEvent(new CustomEvent("dbx-open-driver-store", { detail: focus }));
 }
 
 // 连接/取数失败的统一 toast（issue #13233）：命中「连接超时」类错误时附带「修改超时时间」
@@ -2151,7 +2141,6 @@ async function openObjectBrowser(eventReadOnly = false, openEventEditor: boolean
     }
   } catch (e: any) {
     toastConnectFailed(node.connectionId, e);
-    openDriverStoreForInstallError(e?.message || String(e));
   }
 }
 
@@ -2213,7 +2202,6 @@ async function openDatabaseBrowser() {
     queryStore.openDatabaseBrowser(node.connectionId);
   } catch (e: any) {
     toastConnectFailed(node.connectionId, e);
-    openDriverStoreForInstallError(e?.message || String(e));
   }
 }
 
@@ -2430,7 +2418,6 @@ async function newQuery(options: { reuseQueryTabByScope?: boolean } = {}) {
     else queryStore.createTab(node.connectionId, database, undefined, "query", connection.default_schema);
   } catch (e: any) {
     toastConnectFailed(node.connectionId, e);
-    openDriverStoreForInstallError(e?.message || String(e));
   }
 }
 
@@ -2941,7 +2928,6 @@ async function refresh() {
         return;
       }
       toastConnectFailed(node.connectionId, e);
-      openDriverStoreForInstallError(e?.message || String(e), node);
     }
     return;
   }
@@ -2949,7 +2935,6 @@ async function refresh() {
     await connectionStore.refreshTreeNode(node);
   } catch (e: any) {
     toastConnectFailed(node.connectionId, e);
-    openDriverStoreForInstallError(e?.message || String(e), node);
   }
 }
 

@@ -78,7 +78,7 @@ export function isAutoActionSelection(selection: AiActionSelection): selection i
 }
 
 function isChineseLocale(locale: Locale): boolean {
-  return locale === "zh-CN" || locale === "zh-TW";
+  return locale === "zh-CN";
 }
 
 export interface AiSchemaTable {

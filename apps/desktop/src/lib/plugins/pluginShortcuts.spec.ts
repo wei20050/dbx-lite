@@ -28,7 +28,8 @@ describe("plugin shortcuts", () => {
   it("migrates old positions and sanitizes new visibility and height preferences", () => {
     expect(normalizePluginShortcutSettings({ position: "left" }).position).toBe("left-top");
     expect(normalizePluginShortcutSettings({ position: "right" }).position).toBe("right-top");
-    for (const position of ["left-top", "left-bottom", "right-top", "right-bottom", "sidebar-bottom", "toolbar", "plugin-center"]) expect(normalizePluginShortcutSettings({ position }).position).toBe(position);
+    for (const position of ["left-top", "left-bottom", "right-top", "right-bottom", "sidebar-bottom", "toolbar"]) expect(normalizePluginShortcutSettings({ position }).position).toBe(position);
+    expect(normalizePluginShortcutSettings({ position: "plugin-center" }).position).toBe("right-top");
     expect(normalizePluginShortcutSettings({ hiddenPluginIds: ["a", "a", null, "", "b"], sidebarHeight: NaN })).toMatchObject({ hiddenPluginIds: ["a", "b"], sidebarHeight: null });
     expect(normalizePluginShortcutSettings({ sidebarHeight: -1 }).sidebarHeight).toBeNull();
     expect(normalizePluginShortcutSettings({ sidebarHeight: 156 }).sidebarHeight).toBe(156);

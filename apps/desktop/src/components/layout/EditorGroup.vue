@@ -202,8 +202,6 @@ const groupExecutableSqlMayContainDml = computed(() => mayContainDmlStatement(gr
         @detach-tab="$emit('detach-tab', $event)"
         @activate-settings="toolbar.activateSettingsPage()"
         @close-settings="toolbar.closeSettingsPage()"
-        @activate-plugin-center="toolbar.activatePluginCenter()"
-        @close-plugin-center="toolbar.closePluginCenter()"
         @activate-driver-store="toolbar.activateDriverStore()"
         @close-driver-store="toolbar.closeDriverStore()"
         @save-all-tabs="toolbar.saveAllTabs()"

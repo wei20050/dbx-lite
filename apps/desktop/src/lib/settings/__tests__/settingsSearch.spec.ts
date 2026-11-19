@@ -24,10 +24,8 @@ const categoryLabels = {
   snippets: "Snippets",
   sync: "Sync",
   ai: "AI",
-  mcp: "MCP",
   updates: "Updates",
   security: "Security",
-  about: "About",
 } satisfies Record<SettingsCategory, string>;
 
 const translations: Record<string, string> = {
@@ -57,7 +55,7 @@ describe("settings search", () => {
   const definitions: readonly SettingsSearchDefinition[] = [
     { id: "font", category: "editor", titleKey: "font", descriptionKey: "fontDescription" },
     { id: "export", category: "data", titleKey: "export" },
-    { id: "desktop", category: "about", titleKey: "hidden", visible: ({ isWeb }) => !isWeb },
+    { id: "desktop", category: "updates", titleKey: "hidden", visible: ({ isWeb }) => !isWeb },
   ];
 
   it("indexes the query editor line-number preference", () => {
@@ -245,31 +243,6 @@ describe("settings search", () => {
     expect(webEntries.map((entry) => entry.id)).toEqual(expect.arrayContaining(["sql-file-editor-max-mb", "sql-file-web-upload-max-mb"]));
   });
 
-  it("points the debug logging result at the About tab that renders the switch", () => {
-    // The 启用调试日志 switch (id="debug-logging-enabled") is rendered inside the
-    // About section, next to the debug log copy/download/clear actions. The
-    // search entry used to claim "appearance", so picking the result switched
-    // to 外观 and never revealed the control (regression from #10308).
-    expect(SETTINGS_SEARCH_DEFINITIONS).toContainEqual({
-      id: "about-debug-logs",
-      category: "about",
-      titleKey: "settings.debugLoggingEnabled",
-      descriptionKey: "settings.debugLoggingEnabledDescription",
-      targetId: "about",
-      visible: expect.any(Function),
-    });
-    expect(SETTINGS_SEARCH_DEFINITIONS.map((definition) => definition.id)).not.toContain("appearance-debug-logs");
-
-    const desktopEntries = resolveSettingsSearchEntries(SETTINGS_SEARCH_DEFINITIONS, { isWeb: false, visibleCategories: new Set<SettingsCategory>(["appearance", "about"]) }, translate, categoryLabels);
-    const entry = desktopEntries.find((item) => item.id === "about-debug-logs");
-    expect(entry?.category).toBe("about");
-    expect(entry?.categoryLabel).toBe("About");
-    expect(entry?.targetId).toBe("about");
-
-    const webEntries = resolveSettingsSearchEntries(SETTINGS_SEARCH_DEFINITIONS, { isWeb: true, visibleCategories: new Set<SettingsCategory>(["appearance", "about"]) }, translate, categoryLabels);
-    expect(webEntries.map((item) => item.id)).not.toContain("about-debug-logs");
-  });
-
   it("maps legacy SQL file settings navigation to the editor", () => {
     expect(resolveSettingsCategory("sqlFile")).toBe("editor");
     expect(resolveSettingsCategory()).toBe("appearance");
@@ -324,7 +297,7 @@ describe("settings search", () => {
   });
 
   it("returns matching categories in the navigation order", () => {
-    const entries = resolveSettingsSearchEntries(definitions, { isWeb: false, visibleCategories: new Set<SettingsCategory>(["data", "editor", "about"]) }, translate, categoryLabels);
+    const entries = resolveSettingsSearchEntries(definitions, { isWeb: false, visibleCategories: new Set<SettingsCategory>(["data", "editor", "updates"]) }, translate, categoryLabels);
 
     expect(entries.map((entry) => entry.id)).toEqual(["export", "font", "desktop"]);
   });
@@ -415,7 +388,6 @@ describe("settings search", () => {
       { titleKey: "settings.dataGridFilterView", category: "data", targetId: "data-grid-filter-view" },
       { titleKey: "settings.colorizeDataGridCellTypes", category: "data", targetId: "data" },
       { titleKey: "transfer.dataTransfer", category: "appearance", targetId: "appearance" },
-      { titleKey: "toolbar.driverManager", category: "appearance", targetId: "appearance" },
       { titleKey: "toolbar.theme", category: "appearance", targetId: "appearance" },
       { titleKey: "settings.webLogoPosition", category: "appearance", targetId: "appearance-web-logo-position" },
       { titleKey: "settings.sidebarObjectInfoMode", category: "navigation", targetId: "navigation" },

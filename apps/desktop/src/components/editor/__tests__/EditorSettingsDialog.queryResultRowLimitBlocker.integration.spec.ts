@@ -57,11 +57,6 @@ vi.mock("@/components/ui/button", async () => {
   };
 });
 
-// ChangelogPanel fires a network fetch on mount (About tab); irrelevant here.
-vi.mock("@/components/settings/ChangelogPanel.vue", async () => {
-  const { defineComponent } = await import("vue");
-  return { default: defineComponent({ setup: () => () => null }) };
-});
 
 vi.mock("@/stores/settingsStore", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/stores/settingsStore")>();

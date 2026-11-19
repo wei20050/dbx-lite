@@ -33,8 +33,6 @@ async fn connection_of(state: &Arc<AppState>, connection_id: &str) -> Result<Con
 ///
 /// `AppState.storage.data_dir()` is the directory DBX is actually using — it
 /// honours a custom data dir, which a fresh `app_data_dir()` lookup would not.
-/// (`dbx-mcp::paths::app_data_dir()` is NOT available here: src-tauri does not
-/// depend on dbx-mcp.)
 async fn notes_path_of(state: &Arc<AppState>, connection_id: &str) -> Result<std::path::PathBuf, String> {
     let config = connection_of(state, connection_id).await?;
     Ok(resolve_notes_path(&config.id, config.docs_notes_path.as_deref(), state.storage.data_dir()))

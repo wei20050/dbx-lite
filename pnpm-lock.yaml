@@ -97,9 +97,6 @@ importers:
       '@tauri-apps/plugin-shell':
         specifier: 2.3.5
         version: 2.3.5
-      '@tauri-apps/plugin-updater':
-        specifier: 2.10.1
-        version: 2.10.1
       '@uiw/codemirror-theme-duotone':
         specifier: ^4.25.10
         version: 4.25.12(@codemirror/language@6.13.1)(@codemirror/state@6.7.6)(@codemirror/view@6.43.0)
@@ -300,117 +297,11 @@ importers:
         specifier: 2.9.1
         version: 2.9.1
 
-  packages/cli:
-    optionalDependencies:
-      '@dbx-app/cli-darwin-arm64':
-        specifier: 0.4.144
-        version: link:../cli-darwin-arm64
-      '@dbx-app/cli-darwin-x64':
-        specifier: 0.4.144
-        version: link:../cli-darwin-x64
-      '@dbx-app/cli-linux-arm64-gnu':
-        specifier: 0.4.144
-        version: link:../cli-linux-arm64-gnu
-      '@dbx-app/cli-linux-x64-gnu':
-        specifier: 0.4.144
-        version: link:../cli-linux-x64-gnu
-      '@dbx-app/cli-win32-arm64':
-        specifier: 0.4.144
-        version: link:../cli-win32-arm64
-      '@dbx-app/cli-win32-x64':
-        specifier: 0.4.144
-        version: link:../cli-win32-x64
-
-  packages/cli-darwin-arm64: {}
-
-  packages/cli-darwin-x64: {}
-
-  packages/cli-linux-arm64-gnu: {}
-
-  packages/cli-linux-x64-gnu: {}
-
-  packages/cli-win32-arm64: {}
-
-  packages/cli-win32-x64: {}
-
-  packages/mcp-darwin-arm64: {}
-
-  packages/mcp-darwin-x64: {}
-
-  packages/mcp-linux-arm64-gnu: {}
-
-  packages/mcp-linux-x64-gnu: {}
-
-  packages/mcp-server:
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.21
-        version: 22.20.5
-      vitest:
-        specifier: ^4.1.8
-        version: 4.1.12(@types/node@22.20.5)(@vitest/coverage-v8@4.1.12)(happy-dom@20.10.6)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1))
-    optionalDependencies:
-      '@dbx-app/mcp-darwin-arm64':
-        specifier: 0.4.144
-        version: link:../mcp-darwin-arm64
-      '@dbx-app/mcp-darwin-x64':
-        specifier: 0.4.144
-        version: link:../mcp-darwin-x64
-      '@dbx-app/mcp-linux-arm64-gnu':
-        specifier: 0.4.144
-        version: link:../mcp-linux-arm64-gnu
-      '@dbx-app/mcp-linux-x64-gnu':
-        specifier: 0.4.144
-        version: link:../mcp-linux-x64-gnu
-      '@dbx-app/mcp-win32-arm64':
-        specifier: 0.4.144
-        version: link:../mcp-win32-arm64
-      '@dbx-app/mcp-win32-x64':
-        specifier: 0.4.144
-        version: link:../mcp-win32-x64
-
-  packages/mcp-win32-arm64: {}
-
-  packages/mcp-win32-x64: {}
-
   packages/mongo-shell:
     devDependencies:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
-
-  packages/plugin-cli:
-    optionalDependencies:
-      '@dbx-app/plugin-cli-darwin-arm64':
-        specifier: 0.1.10
-        version: 0.1.10
-      '@dbx-app/plugin-cli-darwin-x64':
-        specifier: 0.1.10
-        version: 0.1.10
-      '@dbx-app/plugin-cli-linux-arm64-gnu':
-        specifier: 0.1.10
-        version: 0.1.10
-      '@dbx-app/plugin-cli-linux-x64-gnu':
-        specifier: 0.1.10
-        version: 0.1.10
-      '@dbx-app/plugin-cli-win32-arm64':
-        specifier: 0.1.10
-        version: 0.1.10
-      '@dbx-app/plugin-cli-win32-x64':
-        specifier: 0.1.10
-        version: 0.1.10
-
-  packages/plugin-cli-darwin-arm64: {}
-
-  packages/plugin-cli-darwin-x64: {}
-
-  packages/plugin-cli-linux-arm64-gnu: {}
-
-  packages/plugin-cli-linux-x64-gnu: {}
-
-  packages/plugin-cli-win32-arm64: {}
-
-  packages/plugin-cli-win32-x64: {}
 
 packages:
 
@@ -537,120 +428,6 @@ packages:
 
   '@codemirror/view@6.43.0':
     resolution: {integrity: sha512-V7ZCLQO3Jus9hzh2jVCCPW3mO4IBMr43O37PqSUYautJSnnJF41YlgLw21x0fLJTYvJ+Vkm6Gp+qKGH9pltgXA==}
-
-  '@dbx-app/cli-darwin-arm64@0.4.133':
-    resolution: {integrity: sha512-q+AxAOKAEoYTmCLBZUVlnC9JUGe8D0qqtoESxgfgX1AUh+VmMUcyHt4ORWZF+EP2VEUGKQFUWCIrvRRSjBJ+DA==}
-    cpu: [arm64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/cli-darwin-x64@0.4.133':
-    resolution: {integrity: sha512-xshyujt6Mj+hoeGq3b1E5hdbUHzCVnVi/TtyoI+09OtE8hH200rYL1JK6aPrcGe1cGb9K1iZMw07EbVKw0tqsQ==}
-    cpu: [x64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/cli-linux-arm64-gnu@0.4.133':
-    resolution: {integrity: sha512-rl8IhFLOHPGk9xjSgaNUAOC798ywQf5paRQPwYY2ibUWkxgGqstDgaI4ibgVFb25uIjfh1OvX81PeekYgUMkUg==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/cli-linux-x64-gnu@0.4.133':
-    resolution: {integrity: sha512-SDZ0DgO66yRMK72OA1BwAKxWskdndopLcrLOBozEnLWxDa2/INN7GqWqtxeqEFM77h/YaAfSWiFIhsjk67xr8g==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/cli-win32-arm64@0.4.133':
-    resolution: {integrity: sha512-EzGqRpE+A87c55op614HuaqduhFdenUUUP9vvLqAYvqcN1K9X8xPSCIC9jI1+hw/Iyxtzh8N8hCgBklcGdQZ6A==}
-    cpu: [arm64]
-    os: [win32]
-    hasBin: true
-
-  '@dbx-app/cli-win32-x64@0.4.133':
-    resolution: {integrity: sha512-vPgPxWNkY+DFi5UuNNA/D16OeRTQ4RtEvPCXMKiqFP8epcIGoyhxBl1bmlDhejrdFzSkKAFk9eky13J7UcVn2g==}
-    cpu: [x64]
-    os: [win32]
-    hasBin: true
-
-  '@dbx-app/mcp-darwin-arm64@0.4.133':
-    resolution: {integrity: sha512-2MkbOtDuOCBfwd/R1rR9rvG9tI509bVgCcFuYSZWwgi1mYCwbadH13AVJgLdVr5uSN03EMSzHroGQ26D8N15vw==}
-    cpu: [arm64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/mcp-darwin-x64@0.4.133':
-    resolution: {integrity: sha512-6GyAEKBaaA3+FDb1sqylngo3PJzyxkhZHqe9YKd6CwqXR1392XxvbrvSUD4Dutdc/7B6q0zl/kq1vSnoKNcZ/g==}
-    cpu: [x64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/mcp-linux-arm64-gnu@0.4.133':
-    resolution: {integrity: sha512-7vmK02X9Z4bZveVIgyb/huXit88iJCKdr9s8XiMORK2usehSIfAIE+dx5lwYPNgg9ZEjSmxOSuIJke5sBk/lQg==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/mcp-linux-x64-gnu@0.4.133':
-    resolution: {integrity: sha512-p0qqlA3ICahTs4O0kBUwxtemLtjVcxEFlkHZGXAe5g9GrOU9+alblVr843+XGVGAP9WlzGWasGAKI73Qr//l1Q==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/mcp-win32-arm64@0.4.133':
-    resolution: {integrity: sha512-8YmOucFpIdZupV+bWXpFxFncMscUZxkgRXX3KEKQzGgH/ErVYs79+YRIlmwdvyDEbjtTn6pQwB7udYsor+cWYA==}
-    cpu: [arm64]
-    os: [win32]
-    hasBin: true
-
-  '@dbx-app/mcp-win32-x64@0.4.133':
-    resolution: {integrity: sha512-ZOr2SvlGxH9bpbMgt7lL9XfVqrCCXwU2pNMme+38lKYMpJtFNS483j5cT8iqMZMe0/P87CQTtIHInA7N5NDMgQ==}
-    cpu: [x64]
-    os: [win32]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-darwin-arm64@0.1.10':
-    resolution: {integrity: sha512-LMZG70qgN7izqKSzXMtWqJ345JlSLxjiNrKcYExQR8EB6K9FGWkE0+5Ub9qnrNszftTziLI4X9eyycpwpRITkQ==}
-    cpu: [arm64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-darwin-x64@0.1.10':
-    resolution: {integrity: sha512-PD4G0F7Y/Hbp92P4+847CF+pkcCN4lTs7xo4wgFeF8/BqUoR6hFhbeVWefCerI8F7rsaTcIFgPIfua76mKER5g==}
-    cpu: [x64]
-    os: [darwin]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-linux-arm64-gnu@0.1.10':
-    resolution: {integrity: sha512-qD5uCjMBw5/VHuiLsKeq3zMSJDhrNQgCWsWeMXa/xF9IgRI2IsD9pXkOW2nIP/ExM0R09J2j1PF9TwrmVR1T/A==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-linux-x64-gnu@0.1.10':
-    resolution: {integrity: sha512-pnBkz50sbfdey/rUqcxqq8p07hXRmobN1nzJWj0hmsmGQ82FcohE8v2uFgKdrjNXyL43D3IMX7CXOJmjvMiHJg==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-win32-arm64@0.1.10':
-    resolution: {integrity: sha512-NchmmwP8PalZ0iys7ezkSf+Flpfq02tTCkjp4l7LGkD7KaiOax0F/SiZBjxn/9QHQ2bNBi1BMlzdA9K+HAK4cw==}
-    cpu: [arm64]
-    os: [win32]
-    hasBin: true
-
-  '@dbx-app/plugin-cli-win32-x64@0.1.10':
-    resolution: {integrity: sha512-oTYcpVdfh6EAUdUa6n7ns4YM+LPQNJAumE/UuTbDyo3aHjNhrnzaZujENy8wU+A7notCbIlAu26cKzADJDS38g==}
-    cpu: [x64]
-    os: [win32]
-    hasBin: true
 
   '@dotenvx/dotenvx@2.38.2':
     resolution: {integrity: sha512-+tjy8o//H+ZkRfRWLh08UkLHCw/e74uIV27QOZ3RxKwXvGrxjEcQMfUvQJzkvK/qNTk/OsE1MlGiDB6iL+1X0g==}
@@ -1681,9 +1458,6 @@ packages:
   '@tauri-apps/plugin-shell@2.3.5':
     resolution: {integrity: sha512-jewtULhiQ7lI7+owCKAjc8tYLJr92U16bPOeAa472LHJdgaibLP83NcfAF2e+wkEcA53FxKQAZ7byDzs2eeizg==}
 
-  '@tauri-apps/plugin-updater@2.10.1':
-    resolution: {integrity: sha512-NFYMg+tWOZPJdzE/PpFj2qfqwAWwNS3kXrb1tm1gnBJ9mYzZ4WDRrwy8udzWoAnfGCHLuePNLY1WVCNHnh3eRA==}
-
   '@ts-morph/common@0.29.0':
     resolution: {integrity: sha512-35oUmphHbJvQ/+UTwFNme/t2p3FoKiGJ5auTjjpNTop2dyREspirjMy82PLSC1pnDJ8ah1GU98hwpVt64YXQsg==}
 
@@ -1716,9 +1490,6 @@ packages:
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
-
-  '@types/node@22.20.5':
-    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
   '@types/node@25.9.9':
     resolution: {integrity: sha512-b4e2xxj/yMeT2hNlD6x7zNFiQK2Dlmkb9CQ6v3/1G2RezKN4YS2lcEv8lzGm1mhs4f2lM4yNAMI/zUDBZBBt7w==}
@@ -3728,9 +3499,6 @@ packages:
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
-
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
@@ -4212,60 +3980,6 @@ snapshots:
       crelt: 1.0.7
       style-mod: 4.1.4
       w3c-keyname: 2.2.8
-
-  '@dbx-app/cli-darwin-arm64@0.4.133':
-    optional: true
-
-  '@dbx-app/cli-darwin-x64@0.4.133':
-    optional: true
-
-  '@dbx-app/cli-linux-arm64-gnu@0.4.133':
-    optional: true
-
-  '@dbx-app/cli-linux-x64-gnu@0.4.133':
-    optional: true
-
-  '@dbx-app/cli-win32-arm64@0.4.133':
-    optional: true
-
-  '@dbx-app/cli-win32-x64@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-darwin-arm64@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-darwin-x64@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-linux-arm64-gnu@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-linux-x64-gnu@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-win32-arm64@0.4.133':
-    optional: true
-
-  '@dbx-app/mcp-win32-x64@0.4.133':
-    optional: true
-
-  '@dbx-app/plugin-cli-darwin-arm64@0.1.10':
-    optional: true
-
-  '@dbx-app/plugin-cli-darwin-x64@0.1.10':
-    optional: true
-
-  '@dbx-app/plugin-cli-linux-arm64-gnu@0.1.10':
-    optional: true
-
-  '@dbx-app/plugin-cli-linux-x64-gnu@0.1.10':
-    optional: true
-
-  '@dbx-app/plugin-cli-win32-arm64@0.1.10':
-    optional: true
-
-  '@dbx-app/plugin-cli-win32-x64@0.1.10':
-    optional: true
 
   '@dotenvx/dotenvx@2.38.2':
     dependencies:
@@ -4968,10 +4682,6 @@ snapshots:
     dependencies:
       '@tauri-apps/api': 2.11.0
 
-  '@tauri-apps/plugin-updater@2.10.1':
-    dependencies:
-      '@tauri-apps/api': 2.11.0
-
   '@ts-morph/common@0.29.0':
     dependencies:
       minimatch: 10.2.6
@@ -5006,10 +4716,6 @@ snapshots:
   '@types/mdast@4.0.4':
     dependencies:
       '@types/unist': 3.0.3
-
-  '@types/node@22.20.5':
-    dependencies:
-      undici-types: 6.21.0
 
   '@types/node@25.9.9':
     dependencies:
@@ -5127,14 +4833,6 @@ snapshots:
       '@vitest/utils': 4.1.12
       chai: 6.3.0
       tinyrainbow: 3.2.0
-
-  '@vitest/mocker@4.1.12(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1))':
-    dependencies:
-      '@vitest/spy': 4.1.12
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1)
 
   '@vitest/mocker@4.1.12(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
@@ -7211,8 +6909,6 @@ snapshots:
 
   ufo@1.6.4: {}
 
-  undici-types@6.21.0: {}
-
   undici-types@7.24.6: {}
 
   undici@6.29.1: {}
@@ -7266,22 +6962,6 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1):
-    dependencies:
-      lightningcss: 1.33.0
-      picomatch: 4.0.7
-      postcss: 8.5.31
-      rolldown: 1.2.15
-      tinyglobby: 0.2.17
-    optionalDependencies:
-      '@types/node': 22.20.5
-      esbuild: 0.28.2
-      fsevents: 2.3.3
-      jiti: 2.7.0
-      stylus: 0.57.0
-      tsx: 4.23.15
-      yaml: 2.9.1
-
   vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
@@ -7297,35 +6977,6 @@ snapshots:
       stylus: 0.57.0
       tsx: 4.23.15
       yaml: 2.9.1
-
-  vitest@4.1.12(@types/node@22.20.5)(@vitest/coverage-v8@4.1.12)(happy-dom@20.10.6)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1)):
-    dependencies:
-      '@vitest/expect': 4.1.12
-      '@vitest/mocker': 4.1.12(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1))
-      '@vitest/pretty-format': 4.1.12
-      '@vitest/runner': 4.1.12
-      '@vitest/snapshot': 4.1.12
-      '@vitest/spy': 4.1.12
-      '@vitest/utils': 4.1.12
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 0.30.21
-      obug: 2.2.1
-      pathe: 2.0.3
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 2.9.0
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      tinyrainbow: 3.2.0
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/node': 22.20.5
-      '@vitest/coverage-v8': 4.1.12(vitest@4.1.12)
-      happy-dom: 20.10.6
-    transitivePeerDependencies:
-      - msw
 
   vitest@4.1.12(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(happy-dom@20.10.6)(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(stylus@0.57.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:

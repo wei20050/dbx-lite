@@ -24,6 +24,12 @@ import { clonePluginData } from "./pluginData";
 
 const PLUGIN_CONNECTION_PROVIDER_OPTION_PREFIX = "plugin-provider:";
 
+export interface PluginConnectionTarget {
+  section?: "settings";
+  pluginId?: string;
+  providerId?: string;
+}
+
 export interface FrontendPluginDefinition {
   plugin: InstalledPlugin;
   contributions: PluginContribution[];

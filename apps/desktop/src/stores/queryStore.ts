@@ -5,7 +5,6 @@ import { connectionConfigFingerprint } from "@/lib/connection/connectionDatabase
 import { executeCursorOffsetPage } from "@/lib/query/queryCursorOffsetPagination";
 import { mergeQueryMessages, queryResultMessages } from "@/lib/query/queryResultMessages";
 import { appendNeo4jNodeCells, extractNeo4jNodeCells } from "@/lib/neo4j/neo4jNodeResult";
-import { UPDATE_RESTORE_KEY, assertUpdateAllowsInteraction } from "@/lib/app/updatePreparation";
 import { defineStore } from "pinia";
 import { usePlDebugStore } from "@/stores/plDebugStore";
 import { isRedisMonitorCommand, startRedisMonitor } from "@/lib/redis/redisMonitor";
@@ -1118,7 +1117,7 @@ function restoreSavedTabsFromPayload(
   payload: { tabs?: unknown; activeTabId?: unknown; groups?: unknown; focusedGroupId?: unknown; orientation?: unknown; sizes?: unknown } | null | undefined,
   options: { validConnectionIds?: Iterable<string>; restoreWorkspace?: boolean } = {},
 ): { tabs: QueryTab[]; activeTabId: string | null; workspace?: unknown } {
-  const restoreMode = options.restoreWorkspace || safeLocalStorageGet(UPDATE_RESTORE_KEY) === "1" ? "all" : useSettingsStore().editorSettings.openTabsRestoreMode;
+  const restoreMode = options.restoreWorkspace ? "all" : useSettingsStore().editorSettings.openTabsRestoreMode;
   const restored = restoreOpenTabsPayload(payload, {
     filter: restoreMode === "none" ? "recovery" : restoreMode === "pinned" ? "pinned" : "all",
     validConnectionIds: options.validConnectionIds,
@@ -1138,7 +1137,7 @@ function restoreSavedTabsFromPayload(
 }
 
 function restoreLegacySavedTabs(options: { validConnectionIds?: Iterable<string> } = {}): { tabs: QueryTab[]; activeTabId: string | null; workspace?: undefined } {
-  const restoreMode = safeLocalStorageGet(UPDATE_RESTORE_KEY) === "1" ? "all" : useSettingsStore().editorSettings.openTabsRestoreMode;
+  const restoreMode = useSettingsStore().editorSettings.openTabsRestoreMode;
   if (restoreMode === "none") {
     return { tabs: [], activeTabId: null, workspace: undefined };
   }
@@ -1545,7 +1544,6 @@ export const useQueryStore = defineStore("query", () => {
    * the new tab ownerless until a post-flush watcher repaired the groups.
    */
   function registerOpenTab(tab: QueryTab, options: { activate?: boolean; insertAfterTabId?: string } = {}): string {
-    assertUpdateAllowsInteraction();
     initializeResultAutoSave(tab);
     const anchorIndex = options.insertAfterTabId ? tabs.value.findIndex((item) => item.id === options.insertAfterTabId) : -1;
     if (anchorIndex >= 0) {
@@ -2983,7 +2981,7 @@ export const useQueryStore = defineStore("query", () => {
       const restored = restoreSavedTabsFromPayload(saved, { ...options, restoreWorkspace });
       applyRestoredOpenTabs(restored);
       notifyTruncatedRestoredTabs(restored.tabs);
-      if (!restoreWorkspace && safeLocalStorageGet(UPDATE_RESTORE_KEY) !== "1" && useSettingsStore().editorSettings.openTabsRestoreMode === "none") {
+      if (!restoreWorkspace && useSettingsStore().editorSettings.openTabsRestoreMode === "none") {
         // Restore is explicitly disabled, so stale saved payloads should not
         // reappear if the user later changes the setting.
         clearLegacySavedTabs();
@@ -2991,7 +2989,6 @@ export const useQueryStore = defineStore("query", () => {
       }
       await recoverDetachedTabsToMain(options);
       await saveTabs(tabs.value, activeTabId.value, { groups: groups.value, focusedGroupId: focusedGroupId.value, orientation: orientation.value, sizes: sizes.value }).catch(() => undefined);
-      safeLocalStorageRemove(UPDATE_RESTORE_KEY);
       isOpenTabsLoaded.value = true;
       scheduleResultCacheMaintenance();
       return;
@@ -3002,7 +2999,7 @@ export const useQueryStore = defineStore("query", () => {
       const restored = restoreLegacySavedTabs(options);
       applyRestoredOpenTabs(restored);
       notifyTruncatedRestoredTabs(restored.tabs);
-      if (safeLocalStorageGet(UPDATE_RESTORE_KEY) !== "1" && useSettingsStore().editorSettings.openTabsRestoreMode === "none") {
+      if (useSettingsStore().editorSettings.openTabsRestoreMode === "none") {
         // Restore is explicitly disabled, so keeping the legacy startup payload
         // would resurrect old tabs if the user later changes the setting.
         clearLegacySavedTabs();
@@ -5862,7 +5859,6 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   function reopenClosedTabEntry(entry: ClosedTabHistoryEntry): string | null {
-    assertUpdateAllowsInteraction();
     const index = closedTabsHistory.value.indexOf(entry);
     if (index < 0) return null;
     closedTabsHistory.value.splice(index, 1);
@@ -5871,7 +5867,6 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   function reopenClosedTab(): string | null {
-    assertUpdateAllowsInteraction();
     const entry = closedTabsHistory.value.pop();
     if (!entry) return null;
 
@@ -7291,7 +7286,6 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   async function executeCurrentTab() {
-    assertUpdateAllowsInteraction();
     const tab = tabs.value.find((t) => t.id === activeTabId.value);
     if (!tab || !tab.sql.trim()) return;
 
@@ -8585,7 +8579,6 @@ export const useQueryStore = defineStore("query", () => {
       batchResume?: BatchSqlResumeOptions;
     },
   ) {
-    assertUpdateAllowsInteraction();
     const tab = findExecutionTab(id);
     if (!tab || !sql.trim()) return;
     if (tab.objectSource?.objectType === "TRIGGER" && oracleTriggerReadOptions(effectiveDatabaseTypeForConnection(useConnectionStore().getConfig(tab.connectionId)))) {
@@ -10535,7 +10528,6 @@ export const useQueryStore = defineStore("query", () => {
   }
 
   async function explainTabSql(id: string, sql: string, databaseType?: DatabaseType, explainMode?: string) {
-    assertUpdateAllowsInteraction();
     const tab = tabs.value.find((t) => t.id === id);
     if (!tab) return { ok: false as const, reason: "empty" as const };
     const conn = useConnectionStore().getConfig(tab.connectionId);

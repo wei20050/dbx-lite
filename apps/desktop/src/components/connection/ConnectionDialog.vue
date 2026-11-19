@@ -78,7 +78,7 @@ import {
   pluginConnectionProviderIcon,
   pluginConnectionProviderOptionValue,
 } from "@/lib/plugins/frontendPlugin";
-import type { PluginCenterFocus } from "@/lib/plugins/pluginCenterNavigation";
+import type { PluginConnectionTarget } from "@/lib/plugins/frontendPlugin";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import { isWindows } from "@/lib/backend/platform";
 import { applyMeilisearchBasePathToExternalConfig, applyParsedConnectionUrl, normalizeMongoConnectionString, parseConnectionUrl } from "@/lib/connection/connectionUrl";
@@ -133,14 +133,13 @@ import { SUNDB_DEFAULT_JDBC_DRIVER_CLASS, sundbJdbcDriverClass } from "@/lib/dat
 import { DamengJvmSystemPropertyError, damengJvmSystemPropertiesText, parseDamengJvmSystemProperties } from "@/lib/database/damengJvmOptions";
 import { copyToClipboard } from "@/lib/common/clipboard";
 import { configuredDatabaseProductName, connectionConfigFingerprint, databaseInfoCopyText, databaseInfoRows, normalizeDatabaseConnectionInfo, type DatabaseInfoField } from "@/lib/connection/connectionDatabaseInfo";
-import { agentDriverInstallKey, appendAgentDriverUpdateHint, connectionUsesSsh, hasAgentDriverUpdate, showAgentDriverInstallHint, type AgentDriverInstallState, type DriverStoreFocus } from "@/lib/connection/agentDriverInstallHint";
+import { agentDriverInstallKey, appendAgentDriverUpdateHint, connectionUsesSsh, hasAgentDriverUpdate, showAgentDriverInstallHint, type AgentDriverInstallState } from "@/lib/connection/agentDriverInstallHint";
 import { prestoSqlBuiltinDriverPaths } from "@/lib/database/prestoSqlBuiltinDriver";
 import { JDBCX_DEFAULT_URL, JDBCX_DRIVER_PROFILE, JDBCX_JDBC_DRIVER_CLASS, ensureJdbcxRuntimeDrivers, isJdbcxRuntimeBundle, isJdbcxRuntimePath, jdbcxHighPrivilegeExtensionsEnabled, setJdbcxHighPrivilegeExtensionsEnabled } from "@/lib/database/jdbcxBuiltinDriver";
-import { notifyComponentUpdatesChanged } from "@/lib/updates/componentUpdateEvents";
 import { SQLITE_DATABASE_FILE_EXTENSIONS } from "@/lib/database/databaseFileDetection";
 import { connectionAttemptOriginalErrorMessage, connectionAttemptTimeoutMessage, connectionAttemptTimeoutMs } from "@/lib/connection/connectionAttemptTimeout";
 import { consulAgentAddressesMatch } from "@/lib/consul/agentTarget";
-import { appendConnectionErrorHints, isJdbcMissingRuntimeDependencyError } from "@/lib/connection/connectionErrorHints";
+import { appendConnectionErrorHints } from "@/lib/connection/connectionErrorHints";
 import { buildCassandraExternalConfig, cassandraTlsConfigFromExternalConfig, type CassandraTlsConfig } from "@/lib/connection/cassandraTlsOptions";
 import { savedMysqlTlsFormFields, supportsMysqlTlsOptions as mysqlTlsOptionsSupported, supportsMysqlTlsTab } from "@/lib/connection/mysqlTlsCapabilities";
 import { copyDialogPasswordFieldValue, preventDialogDocumentSelectAll } from "@/lib/connection/dialogTextSelection";
@@ -169,7 +168,6 @@ import {
   CircleHelp,
   Copy,
   Database as DatabaseLucide,
-  ExternalLink,
   FilePlus2,
   FolderOpen,
   GripVertical,
@@ -255,7 +253,6 @@ import {
 } from "@/lib/database/jdbcProductProfile";
 import {
   ensureRegisteredJdbcProductRuntimeDrivers,
-  isRegisteredJdbcProductRuntimeInstallError,
   jdbcProductDriverProfiles,
   jdbcProductIconTypes,
   jdbcProductPickerOptions,
@@ -352,7 +349,7 @@ const props = defineProps<{
   editConfig?: ConnectionConfig;
   prefillConfig?: ConnectionDeepLinkDraft | null;
   updatePrefill?: ConnectionDeepLinkUpdate | null;
-  pluginProvider?: PluginCenterFocus | null;
+  pluginProvider?: PluginConnectionTarget | null;
   initialTab?: ConfigTab;
 }>();
 
@@ -360,7 +357,6 @@ const emit = defineEmits<{
   connectStarted: [name: string];
   connectSucceeded: [name: string];
   connectFailed: [message: string];
-  openDriverStore: [focus?: DriverStoreFocus];
   openTunnelProfileSettings: [];
 }>();
 
@@ -819,8 +815,6 @@ function resizeNoteTextarea() {
   textarea.style.height = `${Math.min(textarea.scrollHeight, maxContentHeight) + borderHeight}px`;
   textarea.style.overflowY = textarea.scrollHeight > maxContentHeight ? "auto" : "hidden";
 }
-
-const showJdbcDependencyDriverManagerAction = computed(() => form.value.db_type === "jdbc" && (isJdbcMissingRuntimeDependencyError(connectionErrorRawDetail.value) || isRegisteredJdbcProductRuntimeInstallError(form.value, connectionErrorRawDetail.value)));
 
 function externalConfigRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? { ...(value as Record<string, unknown>) } : {};
@@ -2576,7 +2570,6 @@ async function ensureRequiredAgentDriverInstalled(config: ConnectionConfig): Pro
   const operationId = beginAgentDriverInstall(driverKey, label);
   try {
     await api.installAgent(driverKey, operationId);
-    notifyComponentUpdatesChanged();
     await refreshLocalAgentDrivers();
     // A stale promise (cancelled then retried) must not close the retry's dialog.
     if (agentInstallOperationId.value === operationId) finishAgentDriverInstall(operationId);
@@ -2612,7 +2605,6 @@ async function ensureRequiredJdbcxDriverInstalled(config: ConnectionConfig): Pro
     testResult.value = { ok: true, message: "Installing JDBC plugin..." };
   });
   if (!result) return;
-  notifyComponentUpdatesChanged();
 
   jdbcMavenBundles.value = result.bundles;
   addJdbcDriverPaths(result.paths);
@@ -2626,7 +2618,6 @@ async function ensureRequiredJdbcxDriverInstalled(config: ConnectionConfig): Pro
 async function ensureRequiredJdbcProductRuntimeInstalled(config: ConnectionConfig): Promise<void> {
   const result = await ensureRegisteredJdbcProductRuntimeDrivers(config, api);
   if (!result) return;
-  notifyComponentUpdatesChanged();
 
   jdbcMavenBundles.value = result.bundles;
   jdbcDriverPathsInput.value = result.paths.join("\n");
@@ -2646,7 +2637,6 @@ async function ensureRequiredGaussdbMJdbcRuntime(config: ConnectionConfig): Prom
   if (status.installed && status.compatible) return;
   testResult.value = { ok: true, message: t("connection.gaussdbMJdbcPluginInstalling") };
   await api.installJdbcPlugin();
-  notifyComponentUpdatesChanged();
 }
 
 async function installSqlServerLegacyCompatibilityComponentIfNeeded(): Promise<boolean> {
@@ -2656,7 +2646,6 @@ async function installSqlServerLegacyCompatibilityComponentIfNeeded(): Promise<b
   const operationId = beginAgentDriverInstall(SQLSERVER_LEGACY_COMPATIBILITY_DRIVER_KEY, label);
   try {
     await api.installAgent(SQLSERVER_LEGACY_COMPATIBILITY_DRIVER_KEY, operationId);
-    notifyComponentUpdatesChanged();
     await refreshLocalAgentDrivers();
     // A stale promise (cancelled then retried) must not close the retry's dialog.
     if (agentInstallOperationId.value === operationId) finishAgentDriverInstall(operationId);
@@ -3211,7 +3200,7 @@ async function loadInstalledPlugins() {
   }
 }
 
-function applyRequestedPluginProvider(target: PluginCenterFocus | null | undefined) {
+function applyRequestedPluginProvider(target: PluginConnectionTarget | null | undefined) {
   if (!target?.pluginId || !target.providerId) return false;
   const value = pluginConnectionProviderOptionValue(target.pluginId, target.providerId);
   if (!applyPluginProvider(value)) return false;
@@ -3949,7 +3938,7 @@ function jdbcProductCategory(profileId: string): ConnectionProfileCategory {
 
 // `influxdb3` is presented as a version option inside the InfluxDB card
 // (see the version <Select> below), not as a standalone picker entry.
-const dbOptions: DbOption[] = [...CONNECTION_PICKER_OPTIONS.filter((option) => option.value !== "influxdb3"), ...jdbcProductPickerOptions().map((option) => ({ ...option, category: jdbcProductCategory(option.value) }))];
+const dbOptions: DbOption[] = [...CONNECTION_PICKER_OPTIONS, ...jdbcProductPickerOptions().map((option) => ({ ...option, category: jdbcProductCategory(option.value) }))];
 
 const dbCategoryDefinitions = dbCategoryMetadata.map((category) => ({
   ...category,
@@ -4339,13 +4328,6 @@ const sqliteWorkerPlacementOptions = [
     recommended: false,
   },
 ] as const;
-const shouldShowSqliteSshWorkerInstallHint = computed(() => form.value.db_type === "sqlite" && sqliteUsesSsh.value && showAgentDriverInstallHint("sqlite", agentDrivers.value, form.value.driver_profile, { ssh: true }));
-const shouldShowAgentDriverInstallHint = computed(() => {
-  if (form.value.db_type === "sqlite" && sqliteUsesSsh.value) return false;
-  return showAgentDriverInstallHint(form.value.db_type, agentDrivers.value, form.value.driver_profile, { ssh: sqliteUsesSsh.value });
-});
-const agentDriverFocus = computed<DriverStoreFocus>(() => ({ target: "driver", driver: agentDriverInstallKey(form.value.db_type, form.value.driver_profile, { ssh: sqliteUsesSsh.value }) }));
-const h2DriverMissing = computed(() => form.value.db_type === "h2" && isH2FileMode.value && agentDrivers.value.find((d) => d.db_type === "h2")?.installed !== true);
 const canChooseVisibleNacosNamespaces = computed(() => form.value.db_type === "nacos");
 const isNacosV3AdminPlane = computed(() => nacosImplementation.value === "nacos" && nacosVersionMode.value === "v3" && nacosApiPlane.value === "admin");
 const isNacosV3ConsolePlane = computed(() => nacosImplementation.value === "nacos" && nacosVersionMode.value === "v3" && nacosApiPlane.value === "console");
@@ -6516,15 +6498,6 @@ async function copyConnectionErrorDetail() {
   }
 }
 
-function openJdbcDriverManager() {
-  emit("openDriverStore", isJdbcProductConnection.value ? agentDriverFocus.value : { target: "tab", tab: "jdbc" });
-}
-
-function openJdbcDriverManagerFromError() {
-  showConnectionErrorDialog.value = false;
-  openJdbcDriverManager();
-}
-
 function resetForm(options: { preservePickerState?: boolean } = {}) {
   editingId.value = null;
   selectedConnectionGroupId.value = initialConnectionGroupId();
@@ -7669,13 +7642,6 @@ onUnmounted(() => {
   salesforceDeviceStopPolling();
 });
 
-function openExternalUrl(url: string) {
-  if (isTauriRuntime()) {
-    import("@tauri-apps/plugin-shell").then(({ open }) => open(url));
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-}
 </script>
 
 <template>
@@ -8021,13 +7987,6 @@ function openExternalUrl(url: string) {
                     </div>
                   </template>
 
-                  <div v-if="h2DriverMissing" class="grid grid-cols-4 items-center gap-4">
-                    <span />
-                    <p class="col-span-3 text-xs text-muted-foreground">
-                      {{ t("connection.driverInstallHintPrefix") }}<a class="underline cursor-pointer text-primary hover:text-primary/80" @click="emit('openDriverStore', agentDriverFocus)">{{ t("toolbar.driverManager") }}</a
-                      >{{ t("connection.driverInstallHintSuffix") }}
-                    </p>
-                  </div>
 
                   <!-- JDBC: optional external plugin -->
                   <template v-if="isJdbcConnection">
@@ -8054,10 +8013,6 @@ function openExternalUrl(url: string) {
                       <span />
                       <div class="col-span-3 space-y-1 text-xs text-muted-foreground">
                         <p>{{ t(activeJdbcProductMode.hintKey) }}</p>
-                        <p>
-                          {{ t(activeJdbcProductProfile.driverManagerHintPrefixKey) }}<a class="underline cursor-pointer text-primary hover:text-primary/80" @click="emit('openDriverStore', agentDriverFocus)">{{ t("toolbar.driverManager") }}</a
-                          >{{ t(activeJdbcProductProfile.driverManagerHintSuffixKey) }}
-                        </p>
                       </div>
                     </div>
                     <div class="grid grid-cols-4 items-center gap-4">
@@ -8132,16 +8087,6 @@ function openExternalUrl(url: string) {
                         <p v-if="!isJdbcProductConnection" class="text-xs text-muted-foreground">
                           {{ t("connection.jdbcPluginHint") }}
                         </p>
-                        <div class="flex flex-wrap gap-2">
-                          <Button type="button" variant="outline" size="sm" @click="openJdbcDriverManager">
-                            <FolderOpen class="h-3.5 w-3.5" />
-                            {{ t("toolbar.driverManager") }}
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" @click="openExternalUrl(activeJdbcProductProfile?.docsUrl || 'https://dbxio.com')">
-                            <ExternalLink class="h-3.5 w-3.5" />
-                            {{ activeJdbcProductProfile ? t(activeJdbcProductProfile.docsLabelKey) : t("connection.jdbcDocs") }}
-                          </Button>
-                        </div>
                       </div>
                     </div>
                     <div v-if="supportsGenericUrlParams" class="connection-parameters-row grid grid-cols-4 items-center gap-4">
@@ -8218,10 +8163,6 @@ function openExternalUrl(url: string) {
                           </Tooltip>
                         </div>
                         <Input v-if="sqliteWorkerPlacement !== 'session'" v-model="sqliteWorkerPath" :placeholder="sqliteWorkerPlacement === 'persist' ? t('connection.sqliteWorkerPersistPathPlaceholder') : t('connection.sqliteWorkerPreplacedPathPlaceholder')" />
-                        <p v-if="shouldShowSqliteSshWorkerInstallHint" class="text-xs text-muted-foreground">
-                          {{ t("connection.driverInstallHintPrefix") }}<a class="underline cursor-pointer text-primary hover:text-primary/80" @click="emit('openDriverStore', agentDriverFocus)">{{ t("toolbar.driverManager") }}</a
-                          >{{ t("connection.driverInstallHintSuffix") }}
-                        </p>
                       </div>
                     </div>
                     <div v-if="form.db_type === 'sqlite' && !sqliteUsesSsh" class="grid grid-cols-4 items-center gap-4">
@@ -10044,14 +9985,6 @@ function openExternalUrl(url: string) {
                       </div>
                     </div>
 
-                    <div v-if="shouldShowAgentDriverInstallHint" class="grid grid-cols-4 items-center gap-4">
-                      <span />
-                      <p class="col-span-3 text-xs text-muted-foreground">
-                        {{ t("connection.driverInstallHintPrefix") }}<a class="underline cursor-pointer text-primary hover:text-primary/80" @click="emit('openDriverStore', agentDriverFocus)">{{ t("toolbar.driverManager") }}</a
-                        >{{ t("connection.driverInstallHintSuffix") }}
-                      </p>
-                    </div>
-
                     <div v-if="form.db_type === 'firebird'" class="grid grid-cols-4 items-start gap-4">
                       <Label :class="connectionLabelTopClass">{{ t("connection.firebirdCharset") }}</Label>
                       <div class="col-span-3 space-y-1.5">
@@ -10171,16 +10104,6 @@ function openExternalUrl(url: string) {
                           <p class="text-xs text-muted-foreground">
                             {{ nativeAgentJdbcDriverHint }}
                           </p>
-                          <div class="flex flex-wrap gap-2">
-                            <Button type="button" variant="outline" size="sm" @click="emit('openDriverStore', { target: 'tab', tab: 'jdbc' })">
-                              <FolderOpen class="h-3.5 w-3.5" />
-                              {{ t("toolbar.driverManager") }}
-                            </Button>
-                            <Button v-if="form.db_type !== 'dameng'" type="button" variant="outline" size="sm" @click="openExternalUrl('https://dbxio.com')">
-                              <ExternalLink class="h-3.5 w-3.5" />
-                              {{ t("connection.jdbcDocs") }}
-                            </Button>
-                          </div>
                         </div>
                       </div>
                     </template>
@@ -10843,10 +10766,6 @@ function openExternalUrl(url: string) {
                     </div>
                     <div class="flex items-center justify-between gap-3">
                       <p class="text-xs leading-5 text-muted-foreground">{{ t("connection.gaussdbMJdbcDriverHint") }}</p>
-                      <Button type="button" variant="outline" size="sm" class="shrink-0" @click="openJdbcDriverManager">
-                        <FolderOpen class="h-3.5 w-3.5" />
-                        {{ t("toolbar.driverManager") }}
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -11587,10 +11506,6 @@ function openExternalUrl(url: string) {
       </div>
 
       <DialogFooter class="gap-2">
-        <Button v-if="showJdbcDependencyDriverManagerAction" variant="outline" @click="openJdbcDriverManagerFromError">
-          <FolderOpen class="mr-1.5 h-3.5 w-3.5" />
-          {{ t("toolbar.driverManager") }}
-        </Button>
         <Button variant="outline" @click="copyConnectionErrorDetail">
           <Check v-if="connectionErrorCopied" class="mr-1.5 h-3.5 w-3.5" />
           <Copy v-else class="mr-1.5 h-3.5 w-3.5" />

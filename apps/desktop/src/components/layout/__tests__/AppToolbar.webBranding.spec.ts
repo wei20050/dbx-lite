@@ -49,9 +49,6 @@ vi.mock("@/components/layout/WindowControls.vue", () => ({
 vi.mock("@/components/export/ExportProgressPopover.vue", () => ({
   default: { name: "ExportProgressPopoverStub", template: `<div />` },
 }));
-vi.mock("@/components/layout/ToolbarUpdateIcon.vue", () => ({
-  default: { name: "ToolbarUpdateIconStub", template: `<span />` },
-}));
 
 import { useSettingsStore } from "@/stores/settingsStore";
 import AppToolbar from "../AppToolbar.vue";
@@ -68,7 +65,6 @@ const defaultToolbarProps = {
   sqlLibrarySaveFeedbackId: 0,
   showSqlFilePanel: false,
   showDriverStore: false,
-  showPluginCenter: false,
   showSettingsPage: false,
   checkingUpdates: false,
   hasUpdateAvailable: false,
@@ -134,21 +130,18 @@ describe("AppToolbar web branding (#8703, #11053)", () => {
     document.body.innerHTML = "";
   });
 
-  it("renders the DBX brand logo and title on web mode on the left by default", async () => {
+  it("renders the dbx-lite brand logo and title on web mode on the left by default", async () => {
     mockIsTauriRuntime = false;
     const { host, unmount } = mount();
     await nextTick();
 
     const brandEl = host.querySelector('[data-testid="web-brand-logo"]');
     expect(brandEl).not.toBeNull();
-    expect(brandEl?.getAttribute("href")).toBe("https://dbxio.com");
-    expect(brandEl?.getAttribute("target")).toBe("_blank");
-    expect(brandEl?.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(brandEl?.textContent).toContain("DBX");
+    expect(brandEl?.textContent).toContain("dbx-lite");
 
     const logoImg = brandEl?.querySelector("img");
     expect(logoImg).not.toBeNull();
-    expect(logoImg?.getAttribute("alt")).toBe("DBX");
+    expect(logoImg?.getAttribute("alt")).toBe("dbx-lite");
 
     // Located at the very start of toolbar (left position)
     const toolbar = host.querySelector(".app-toolbar");
@@ -157,7 +150,7 @@ describe("AppToolbar web branding (#8703, #11053)", () => {
     unmount();
   });
 
-  it("renders the DBX brand logo on the right when configured (#11053)", async () => {
+  it("renders the dbx-lite brand logo on the right when configured (#11053)", async () => {
     mockIsTauriRuntime = false;
     const settingsStore = useSettingsStore();
     settingsStore.updateEditorSettings({ webLogoPosition: "right" });
@@ -167,7 +160,7 @@ describe("AppToolbar web branding (#8703, #11053)", () => {
 
     const brandEl = host.querySelector('[data-testid="web-brand-logo"]');
     expect(brandEl).not.toBeNull();
-    expect(brandEl?.textContent).toContain("DBX");
+    expect(brandEl?.textContent).toContain("dbx-lite");
 
     const toolbar = host.querySelector(".app-toolbar");
     const children = Array.from(toolbar?.children ?? []);
@@ -197,7 +190,7 @@ describe("AppToolbar web branding (#8703, #11053)", () => {
     unmount();
   });
 
-  it("does not render the web DBX brand logo in desktop mode regardless of setting", async () => {
+  it("does not render the web dbx-lite brand logo in desktop mode regardless of setting", async () => {
     mockIsTauriRuntime = true;
     const settingsStore = useSettingsStore();
     settingsStore.updateEditorSettings({ webLogoPosition: "right" });
@@ -260,7 +253,7 @@ describe("AppToolbar web branding (#8703, #11053)", () => {
     const clone = vi.spyOn(toolbar, "cloneNode");
     const narrowCount = toolbar.querySelectorAll('[data-right-toolbar-label-visible="true"]').length;
     expect(localStorage.getItem("dbx-right-toolbar-labels")).toBe("true");
-    width = 1150;
+    width = 1000;
     window.dispatchEvent(new Event("resize"));
     await vi.waitFor(() => expect(toolbar.querySelectorAll('[data-right-toolbar-label-visible="true"]').length).toBeGreaterThan(narrowCount));
     expect(toolbar.dataset.rightToolbarLabels).toBe("partial");

@@ -231,21 +231,3 @@ describe("QueryHistory manual rollback SQL", () => {
   });
 });
 
-describe("QueryHistory source filters", () => {
-  it("searches MCP independently and resets success when switching back to SQL", async () => {
-    const root = document.createElement("div");
-    document.body.append(root);
-    app = createApp(QueryHistory);
-    app.mount(root);
-    await nextTick();
-    button("history.sources.mcp").click();
-    await vi.waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ source: "mcp", activity_kind: undefined, success: undefined })));
-    expect(document.body.textContent).not.toContain("history.filters.schema_change");
-    button("history.filters.mcp_success").click();
-    await vi.waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ source: "mcp", success: true, activity_kind: undefined })));
-    button("history.sources.sql").click();
-    await vi.waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ source: "sql", success: undefined, activity_kind: undefined })));
-    expect(document.body.textContent).toContain("history.filters.schema_change");
-    expect(document.body.textContent).not.toContain("history.sources.all");
-  });
-});

@@ -44,11 +44,6 @@ vi.mock("@/components/ui/button", async () => {
   };
 });
 
-vi.mock("@/components/settings/ChangelogPanel.vue", async () => {
-  const { defineComponent } = await import("vue");
-  return { default: defineComponent({ setup: () => () => null }) };
-});
-
 vi.mock("@/stores/settingsStore", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/stores/settingsStore")>();
   const store = {

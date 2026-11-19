@@ -36,17 +36,16 @@ import { useReadOnlyUnlockStore, WRITE_UNLOCK_FIVE_MINUTES_SECS, WRITE_UNLOCK_ON
 import { useDialogSources } from "@/composables/useDialogSources";
 import { useMountedOnce } from "@/composables/useMountedOnce";
 import type { ConnectionDeepLinkDraft, ConnectionDeepLinkUpdate } from "@/lib/connection/connectionDeepLink";
-import type { DriverStoreFocus } from "@/lib/connection/agentDriverInstallHint";
 import type { SqlParameterDescriptor, SqlParameterSyntax } from "@/lib/sql/sqlParameters";
 import type { ConfigTab } from "@/components/connection/ConnectionDialog.vue";
 import type { DatabaseType } from "@/types/database";
-import type { PluginCenterFocus } from "@/lib/plugins/pluginCenterNavigation";
+import type { PluginConnectionTarget } from "@/lib/plugins/frontendPlugin";
 
 const props = defineProps<{
   showConnectionDialog: boolean;
   connectionPrefill?: ConnectionDeepLinkDraft | null;
   connectionUpdate?: ConnectionDeepLinkUpdate | null;
-  connectionPluginProvider?: PluginCenterFocus | null;
+  connectionPluginProvider?: PluginConnectionTarget | null;
   connectionInitialTab?: ConfigTab;
   showDangerDialog: boolean;
   dangerSql: string;
@@ -69,7 +68,6 @@ const emit = defineEmits<{
   connectStarted: [name: string];
   connectSucceeded: [name: string];
   connectFailed: [message: string];
-  openDriverStore: [focus?: DriverStoreFocus];
   openTunnelProfileSettings: [];
   openConnectionSettings: [connectionId: string, initialTab: "advanced"];
   openLineageTarget: [
@@ -181,7 +179,6 @@ watch(
     @connect-started="emit('connectStarted', $event)"
     @connect-succeeded="emit('connectSucceeded', $event)"
     @connect-failed="emit('connectFailed', $event)"
-    @open-driver-store="emit('openDriverStore', $event)"
     @open-tunnel-profile-settings="emit('openTunnelProfileSettings')"
   />
   <DangerConfirmDialog

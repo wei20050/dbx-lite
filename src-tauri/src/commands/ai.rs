@@ -120,7 +120,6 @@ pub async fn ai_stream(
 
 use dbx_core::agent_events::AgentEvent;
 use dbx_core::agent_loop::{run_agent_loop, AgentLoopContext};
-use dbx_core::ai_cli_agent::CliAgentCommandSpec;
 use dbx_core::models::connection::DatabaseType;
 
 #[derive(serde::Serialize)]
@@ -391,12 +390,7 @@ pub async fn ai_agent_stream(
     let parsed_db_type: DatabaseType =
         serde_json::from_str(&format!("\"{}\"", db_type)).map_err(|_| format!("Unknown database type: {db_type}"))?;
 
-    let cli_mcp_server_command = if is_cli_provider(&request.config.provider) {
-        let (program, args) = super::mcp::resolve_mcp_server_command().await?;
-        Some(CliAgentCommandSpec { program, args })
-    } else {
-        None
-    };
+    let cli_mcp_server_command = None;
     let cancelled = dbx_core::ai::register_stream(&session_id).await;
     let production_database = state
         .configs
@@ -484,13 +478,13 @@ fn resolve_cli_provider_config(mut config: AiConfig) -> AiConfig {
         AiProvider::PiAgentCli => (&mut config.pi_agent_cli_path, "pi"),
         AiProvider::OpenCodeCli => {
             let default_cmd = if matches!(config.opencode_cli_version.as_deref(), Some("v2" | "2")) {
-                if super::mcp::locate_command("opencode2").is_some() {
+                if locate_command("opencode2").is_some() {
                     "opencode2"
                 } else {
                     "opencode"
                 }
-            } else if super::mcp::locate_command("opencode").is_none()
-                && super::mcp::locate_command("opencode2").is_some()
+            } else if locate_command("opencode").is_none()
+                && locate_command("opencode2").is_some()
             {
                 "opencode2"
             } else {
@@ -509,10 +503,39 @@ fn resolve_cli_provider_config(mut config: AiConfig) -> AiConfig {
         return config;
     }
 
-    if let Some(path) = super::mcp::locate_command(command) {
+    if let Some(path) = locate_command(command) {
         *path_slot = Some(path);
     }
     config
+}
+
+fn locate_command(command: &str) -> Option<String> {
+    let direct = Path::new(command);
+    if direct.is_file() {
+        return Some(direct.to_string_lossy().into_owned());
+    }
+    let path = std::env::var_os("PATH")?;
+    #[cfg(windows)]
+    let extensions = std::env::var("PATHEXT")
+        .unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string())
+        .split(';')
+        .filter(|extension| !extension.is_empty())
+        .map(|extension| extension.to_lowercase())
+        .collect::<Vec<_>>();
+    for directory in std::env::split_paths(&path) {
+        let candidate = directory.join(command);
+        if candidate.is_file() {
+            return Some(candidate.to_string_lossy().into_owned());
+        }
+        #[cfg(windows)]
+        for extension in &extensions {
+            let candidate = directory.join(format!("{command}{extension}"));
+            if candidate.is_file() {
+                return Some(candidate.to_string_lossy().into_owned());
+            }
+        }
+    }
+    None
 }
 
 fn is_explicit_cli_path(command: &str) -> bool {
