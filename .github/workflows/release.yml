@@ -88,3 +88,28 @@ jobs:
           $msiInstallers = @(Get-ChildItem (Join-Path $bundleRoot "msi") -Filter "*.msi" -File -ErrorAction SilentlyContinue)
           if ($nsisInstallers.Count -eq 0) { throw "No NSIS installer was produced for ${{ matrix.target }}" }
           if ($msiInstallers.Count -eq 0) { throw "No MSI installer was produced for ${{ matrix.target }}" }
+
+      # tauri build embeds the frontend via custom-protocol, so the raw binary
+      # runs standalone (WebView2 runtime is still required on the target PC).
+      - name: Prepare portable executable
+        shell: pwsh
+        run: |
+          $exe = "target/${{ matrix.target }}/release/dbx.exe"
+          if (-not (Test-Path $exe)) { throw "Missing portable executable: $exe" }
+          Copy-Item $exe "dbx-lite-${{ matrix.arch }}.exe"
+
+      - name: Upload portable executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbx-lite-windows-${{ matrix.arch }}
+          path: dbx-lite-${{ matrix.arch }}.exe
+          if-no-files-found: error
+
+      - name: Attach portable executable to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: DBX ${{ env.RELEASE_TAG }}
+          draft: true
+          files: dbx-lite-${{ matrix.arch }}.exe
+          fail_on_unmatched_files: true
