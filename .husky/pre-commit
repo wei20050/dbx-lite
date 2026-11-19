@@ -1,4 +1,8 @@
-pnpm exec lint-staged
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm exec lint-staged
+else
+  npx --no-install lint-staged
+fi
 
 # Only format and re-add Rust files that are already staged
 TOPLEVEL=$(git rev-parse --show-toplevel)
