@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,7 +14,7 @@ if (!match) {
 
 const version = `${match[1]}${match[2] || ""}`;
 const jsonFiles = ["package.json", "src-tauri/tauri.conf.json"];
-const cargoFiles = ["src-tauri/Cargo.toml", "crates/dbx-web/Cargo.toml"];
+const cargoFiles = ["src-tauri/Cargo.toml", "crates/dbx-web/Cargo.toml"].filter((path) => existsSync(resolve(root, path)));
 
 for (const relativePath of jsonFiles) {
   const path = resolve(root, relativePath);
@@ -38,7 +38,10 @@ const lockSource = readFileSync(lockPath, "utf8");
 let lockUpdated = lockSource;
 for (const packageName of ["dbx", "dbx-web"]) {
   const pattern = new RegExp(`(\\[\\[package\\]\\]\\r?\\nname = "${packageName}"\\r?\\nversion = ")[^\\r\\n"]+(")`);
-  if (!pattern.test(lockUpdated)) throw new Error(`${packageName} package version was not found in Cargo.lock.`);
+  if (!pattern.test(lockUpdated)) {
+    if (packageName === "dbx") throw new Error(`${packageName} package version was not found in Cargo.lock.`);
+    continue;
+  }
   lockUpdated = lockUpdated.replace(pattern, `$1${version}$2`);
 }
 writeFileSync(lockPath, lockUpdated);
