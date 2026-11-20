@@ -55,7 +55,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             libfontconfig1-dev \
-            patchelf
+            patchelf \
+            xdg-utils
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
