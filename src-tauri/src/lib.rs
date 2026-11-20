@@ -2140,18 +2140,15 @@ pub fn run() {
         builder
     };
 
-    let builder = builder
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::default()
-                .with_state_flags(window_state_guard::persisted_main_window_state_flags())
-                // The main window's geometry is restored by `window_state_guard`
-                // in logical units; the plugin's physical restore is the bug in
-                // issue #13168.
-                .skip_initial_state("main")
-                .build(),
-        );
+    let builder = builder.plugin(tauri_plugin_opener::init()).plugin(tauri_plugin_shell::init()).plugin(
+        tauri_plugin_window_state::Builder::default()
+            .with_state_flags(window_state_guard::persisted_main_window_state_flags())
+            // The main window's geometry is restored by `window_state_guard`
+            // in logical units; the plugin's physical restore is the bug in
+            // issue #13168.
+            .skip_initial_state("main")
+            .build(),
+    );
 
     // macOS app menu (Cmd+Q / Dock Quit). Skip on Linux/Windows so an empty menu bar
     // is not installed where there was none before.

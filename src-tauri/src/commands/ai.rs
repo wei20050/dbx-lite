@@ -483,9 +483,7 @@ fn resolve_cli_provider_config(mut config: AiConfig) -> AiConfig {
                 } else {
                     "opencode"
                 }
-            } else if locate_command("opencode").is_none()
-                && locate_command("opencode2").is_some()
-            {
+            } else if locate_command("opencode").is_none() && locate_command("opencode2").is_some() {
                 "opencode2"
             } else {
                 "opencode"
