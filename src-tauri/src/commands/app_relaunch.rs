@@ -15,7 +15,7 @@ pub fn relaunch_app(app: tauri::AppHandle) {
                         log::info!("relaunching {} through LaunchServices (helper pid {helper_pid})", bundle.display());
                         // exit(0) bypasses tauri's ExitRequested shutdown, so stop the runtime
                         // resources here exactly like a forced exit does.
-                        crate::cleanup_before_forced_exit(&app);
+                        crate::cleanup_before_updater_forced_exit(&app);
                         std::process::exit(0);
                     }
                     Err(error) => {
