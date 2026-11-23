@@ -10,6 +10,9 @@ function inferredRuntimeBasePath(pathname: string): string {
   const normalized = pathname.replace(/\/+$/, "");
   if (!normalized || normalized === "/login") return "";
   if (normalized.endsWith("/login")) return normalized.slice(0, -"/login".length);
+  // A document URL ending in /index.html is a file, not a base directory.
+  // Treating it as a base breaks every webPath("/icons/...") lookup.
+  if (normalized.endsWith("/index.html")) return normalized.slice(0, -"/index.html".length);
   return normalized;
 }
 

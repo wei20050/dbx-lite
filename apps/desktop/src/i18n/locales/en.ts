@@ -12171,7 +12171,7 @@ export default {
     supportInfoCopied: "Copied",
     supportInfoLoading: "Loading support information...",
     supportInfoLoadFailed: "Failed to load full support information: {message}",
-    supportInfoAppVersion: "DBX Version",
+    supportInfoAppVersion: "dbx-lite Version",
     supportInfoRuntime: "Runtime",
     supportInfoRuntimeDesktop: "Desktop",
     supportInfoRuntimeWeb: "Web",

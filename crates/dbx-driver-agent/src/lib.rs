@@ -7,6 +7,7 @@ pub use dbx_types::{database_manifest, models, types};
 
 pub mod agent_catalog;
 pub mod agent_connection;
+pub mod bundled_agents;
 pub mod agent_driver;
 pub mod agent_manager;
 pub mod agent_offline_export;

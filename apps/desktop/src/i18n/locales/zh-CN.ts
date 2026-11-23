@@ -12137,7 +12137,7 @@ export default withEnglishFallback({
     supportInfoCopied: "已复制",
     supportInfoLoading: "正在加载支持信息...",
     supportInfoLoadFailed: "完整支持信息加载失败：{message}",
-    supportInfoAppVersion: "DBX 版本",
+    supportInfoAppVersion: "dbx-lite 版本",
     supportInfoRuntime: "运行环境",
     supportInfoRuntimeDesktop: "桌面端",
     supportInfoRuntimeWeb: "Web 端",

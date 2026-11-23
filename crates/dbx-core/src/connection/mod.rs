@@ -2171,10 +2171,16 @@ impl AppState {
             storage,
             plugins,
             plugin_host,
-            agent_manager: crate::agent_manager::AgentManager::new_with_base_dir_and_app_version(
-                agent_dir,
-                app_version,
-            ),
+            agent_manager: {
+                let manager =
+                    crate::agent_manager::AgentManager::new_with_base_dir_and_app_version(agent_dir, app_version);
+                // Oracle (thin), KingbaseES and Dameng are compiled into the
+                // binary; extract them on first run so no download is needed.
+                if let Err(error) = dbx_drivers::bundled_agents::install_bundled_drivers(&manager) {
+                    log::warn!("failed to install bundled drivers: {error}");
+                }
+                manager
+            },
             pl_debug: Arc::new(crate::query::pl_debug::PlDebugRegistry::default()),
             nacos_registry: crate::nacos::NacosAdminRegistry::new(),
             duckdb_worker_process_isolation: AtomicBool::new(false),

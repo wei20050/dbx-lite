@@ -11,7 +11,45 @@ import SidebarActivationSettings from "@/components/editor/SidebarActivationSett
 import { translateBackendError } from "@/i18n/backend-errors";
 import { MAX_CONNECT_TIMEOUT_SECS, MAX_QUERY_TIMEOUT_SECS } from "@/lib/connection/timeoutLimits";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronUp, CircleHelp, Cloud, Code, Copy, Download, ExternalLink, FolderOpen, Eye, Filter, Globe, GripVertical, HardDrive, Keyboard, Loader2, LogOut, Moon, PackageSearch, Palette, PanelLeft, Pencil, Plus, RefreshCw, RotateCcw, Search, Settings, Sun, Star, SunMoon, Table, Trash2, Upload, X, } from "@lucide/vue";
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  CircleHelp,
+  Cloud,
+  Code,
+  Copy,
+  Download,
+  ExternalLink,
+  FolderOpen,
+  Eye,
+  Filter,
+  Globe,
+  GripVertical,
+  HardDrive,
+  Keyboard,
+  Loader2,
+  LogOut,
+  Moon,
+  PackageSearch,
+  Palette,
+  PanelLeft,
+  Pencil,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Settings,
+  Sun,
+  Star,
+  SunMoon,
+  Table,
+  Trash2,
+  Upload,
+  X,
+} from "@lucide/vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,7 +64,81 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpTooltip, Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
-  useSettingsStore, AI_PROVIDER_PRESETS, AI_PROVIDER_PARTNER_PRESETS, CC_SWITCH_PROVIDER_ID, AI_OUTPUT_TOKENS_MAX, AI_OUTPUT_TOKENS_MIN, EDITOR_THEMES, DEFAULT_EDITOR_SETTINGS, DEFAULT_DESKTOP_SETTINGS, DEFAULT_SIDEBAR_TABLE_PAGE_SIZE, DUCKDB_WORKER_MAX_PROCESSES_MAX, DUCKDB_WORKER_MAX_PROCESSES_MIN, normalizeDuckDbWorkerMaxProcesses, normalizeAiEnv, normalizeAiHeaders, getAiProviderPreset, getAiProviderPresetId, getAiProviderPresetDefaultEndpoint, getAiProviderPresetOption, isAiPartnerProviderPreset, type AiProvider, type AiApiStyle, type AiAuthMethod, type AiConfiguredModel, type AiReasoningLevel, type EditorTheme, type DesktopIconTheme, type InterfaceLayout, type DisconnectTabHandlingMode, type DeleteConnectionTabHandlingMode, type DeepLinkConnectionConfirmMode, type DuplicateTabTitleMode, type DataTabReuseMode, type DataGridFilterEditorView, type DataGridToolbarLayout, type MultiStatementDefaultView, type DefaultExplainView, type ResultTabNamingMode, type OpenTabsRestoreMode, type AppCloseUnsavedTabsMode, type SidebarObjectInfoMode, type SqlSemanticDiagnosticsMode, type SavedSqlOpenTargetMode, type AiSqlApplyTargetMode, type TabGroupMode, type TabGroupRowMode, type TabPlacement, type ConnectionTabColorScope, type TabSortMode, type WelcomePageMode, type UpdateDownloadSource, type UpdateChannel, type CsvQuoteMode, type CsvNullMode, type QueryResultExportFileNameSource, type CustomThemeColors, type CustomTheme, DEFAULT_CUSTOM_THEMES, type ClickTableNavigationTarget, type EditorSettings, type WebLogoPosition, type SnippetTriggerKey, type SqlCompletionTriggerMode, type SqlCompletionMatchMode, type SqlTableCompletionSchemaQualification, type TableHoverLookupMode, normalizeTabMaxWidth, SIDEBAR_INDENT_MIN, SIDEBAR_INDENT_MAX, SIDEBAR_FONT_SIZE_MIN, SIDEBAR_FONT_SIZE_MAX, SIDEBAR_DENSITIES, isSidebarDensity, type SidebarDensity } from "@/stores/settingsStore";
+  useSettingsStore,
+  AI_PROVIDER_PRESETS,
+  AI_PROVIDER_PARTNER_PRESETS,
+  CC_SWITCH_PROVIDER_ID,
+  AI_OUTPUT_TOKENS_MAX,
+  AI_OUTPUT_TOKENS_MIN,
+  EDITOR_THEMES,
+  DEFAULT_EDITOR_SETTINGS,
+  DEFAULT_DESKTOP_SETTINGS,
+  DEFAULT_SIDEBAR_TABLE_PAGE_SIZE,
+  DUCKDB_WORKER_MAX_PROCESSES_MAX,
+  DUCKDB_WORKER_MAX_PROCESSES_MIN,
+  normalizeDuckDbWorkerMaxProcesses,
+  normalizeAiEnv,
+  normalizeAiHeaders,
+  getAiProviderPreset,
+  getAiProviderPresetId,
+  getAiProviderPresetDefaultEndpoint,
+  getAiProviderPresetOption,
+  isAiPartnerProviderPreset,
+  type AiProvider,
+  type AiApiStyle,
+  type AiAuthMethod,
+  type AiConfiguredModel,
+  type AiReasoningLevel,
+  type EditorTheme,
+  type DesktopIconTheme,
+  type InterfaceLayout,
+  type DisconnectTabHandlingMode,
+  type DeleteConnectionTabHandlingMode,
+  type DeepLinkConnectionConfirmMode,
+  type DuplicateTabTitleMode,
+  type DataTabReuseMode,
+  type DataGridFilterEditorView,
+  type DataGridToolbarLayout,
+  type MultiStatementDefaultView,
+  type DefaultExplainView,
+  type ResultTabNamingMode,
+  type OpenTabsRestoreMode,
+  type AppCloseUnsavedTabsMode,
+  type SidebarObjectInfoMode,
+  type SqlSemanticDiagnosticsMode,
+  type SavedSqlOpenTargetMode,
+  type AiSqlApplyTargetMode,
+  type TabGroupMode,
+  type TabGroupRowMode,
+  type TabPlacement,
+  type ConnectionTabColorScope,
+  type TabSortMode,
+  type WelcomePageMode,
+  type UpdateDownloadSource,
+  type UpdateChannel,
+  type CsvQuoteMode,
+  type CsvNullMode,
+  type QueryResultExportFileNameSource,
+  type CustomThemeColors,
+  type CustomTheme,
+  DEFAULT_CUSTOM_THEMES,
+  type ClickTableNavigationTarget,
+  type EditorSettings,
+  type WebLogoPosition,
+  type SnippetTriggerKey,
+  type SqlCompletionTriggerMode,
+  type SqlCompletionMatchMode,
+  type SqlTableCompletionSchemaQualification,
+  type TableHoverLookupMode,
+  normalizeTabMaxWidth,
+  SIDEBAR_INDENT_MIN,
+  SIDEBAR_INDENT_MAX,
+  SIDEBAR_FONT_SIZE_MIN,
+  SIDEBAR_FONT_SIZE_MAX,
+  SIDEBAR_DENSITIES,
+  isSidebarDensity,
+  type SidebarDensity,
+} from "@/stores/settingsStore";
 import { EDITOR_FONT_FAMILY_CSS_VAR, EDITOR_FONT_SIZE_CSS_VAR, createRunStatementButtonDom, loadEditorTheme, editorFontTheme } from "@/lib/editor/editorThemes";
 import { orderAiConfigsForDisplay } from "@/lib/ai/aiConfigOrdering";
 import { isAiConnectionTestConfigCurrent } from "@/lib/ai/aiConnectionTest";
@@ -45,15 +157,91 @@ import { copyToClipboard, readTextFromClipboard } from "@/lib/common/clipboard";
 import { importClipboardApiKeyAfterConfirmation, type AiConfigDeepLinkDraft } from "@/lib/ai/aiConfigDeepLink";
 import { clearDebugLogs as clearStoredDebugLogs, downloadDebugLogs, getDebugLogBundleText } from "@/lib/backend/debugLog";
 import {
-  aiTestConnection, loadCcSwitchAiConfigs, loadMagpieAiConfigs, forgetSnippetSavedToken, forgetSnippetSavedPassphrase, forgetWebdavSyncSecretsPassphrase, forgetWebdavSavedPassword, getAppSupportInfo, checkBackgroundImage, cloudSyncLocalCatalog, localBackupExport, localBackupImport, localBackupInspect, clearBackgroundImage, saveBackgroundImage, loadMaxAgentTurns, saveMaxAgentTurns, setShortcutRecording, loadMaxRetries, saveMaxRetries, loadSqlFileUploadMaxBytes, saveSqlFileUploadMaxMb, saveWebdavSyncSecretsPreference, saveWebdavSavedPassword, saveSnippetSavedToken, saveSnippetSavedPassphrase, saveSnippetSyncId, retrySnippetLegacyCleanup, snippetSyncDownload, snippetSyncInspect, snippetSyncSettings, snippetSyncTest, snippetSyncUpload, snippetPassphraseStatus, snippetTokenStatus, webdavPasswordStatus, webdavSyncDownload, webdavSyncInspect, webdavSyncSecretsStatus, webdavSyncTest, relaunchApp, webdavSyncUpload, listInstalledAgentsLocal, listPlugins, type AppSupportInfo, type SnippetProvider, type SnippetSyncConfig, type SyncSelection, type SyncSnapshotCatalog, type WebDavConfig, } from "@/lib/backend/api";
+  aiTestConnection,
+  loadCcSwitchAiConfigs,
+  loadMagpieAiConfigs,
+  forgetSnippetSavedToken,
+  forgetSnippetSavedPassphrase,
+  forgetWebdavSyncSecretsPassphrase,
+  forgetWebdavSavedPassword,
+  getAppSupportInfo,
+  checkBackgroundImage,
+  cloudSyncLocalCatalog,
+  localBackupExport,
+  localBackupImport,
+  localBackupInspect,
+  clearBackgroundImage,
+  saveBackgroundImage,
+  loadMaxAgentTurns,
+  saveMaxAgentTurns,
+  setShortcutRecording,
+  loadMaxRetries,
+  saveMaxRetries,
+  loadSqlFileUploadMaxBytes,
+  saveSqlFileUploadMaxMb,
+  saveWebdavSyncSecretsPreference,
+  saveWebdavSavedPassword,
+  saveSnippetSavedToken,
+  saveSnippetSavedPassphrase,
+  saveSnippetSyncId,
+  retrySnippetLegacyCleanup,
+  snippetSyncDownload,
+  snippetSyncInspect,
+  snippetSyncSettings,
+  snippetSyncTest,
+  snippetSyncUpload,
+  snippetPassphraseStatus,
+  snippetTokenStatus,
+  webdavPasswordStatus,
+  webdavSyncDownload,
+  webdavSyncInspect,
+  webdavSyncSecretsStatus,
+  webdavSyncTest,
+  relaunchApp,
+  webdavSyncUpload,
+  listInstalledAgentsLocal,
+  listPlugins,
+  type AppSupportInfo,
+  type SnippetProvider,
+  type SnippetSyncConfig,
+  type SyncSelection,
+  type SyncSnapshotCatalog,
+  type WebDavConfig,
+} from "@/lib/backend/api";
 import type { DesktopSettings } from "@/lib/backend/tauri";
 import {
-  MAX_SNIPPET_AUTO_UPLOAD_INTERVAL_MINUTES, normalizedSnippetAutoUploadInterval, readSnippetAutoUploadConfig, readSnippetLastSuccessfulUpload, readSnippetRemoteContentHash, snippetRemoteContentHashKey, SNIPPET_AUTO_UPLOAD_CONFIG_CHANGED_EVENT, SNIPPET_LAST_UPLOAD_CHANGED_EVENT, writeSnippetAutoUploadFields, readSnippetSyncSecretPreferences, writeSnippetSyncSecretPreferences, writeSnippetLastSuccessfulUpload, writeSnippetAutoUploadSelection, writeSnippetRemoteContentHash, withSnippetSyncLock, } from "@/lib/cloudSync/snippetAutoUploadConfig";
+  MAX_SNIPPET_AUTO_UPLOAD_INTERVAL_MINUTES,
+  normalizedSnippetAutoUploadInterval,
+  readSnippetAutoUploadConfig,
+  readSnippetLastSuccessfulUpload,
+  readSnippetRemoteContentHash,
+  snippetRemoteContentHashKey,
+  SNIPPET_AUTO_UPLOAD_CONFIG_CHANGED_EVENT,
+  SNIPPET_LAST_UPLOAD_CHANGED_EVENT,
+  writeSnippetAutoUploadFields,
+  readSnippetSyncSecretPreferences,
+  writeSnippetSyncSecretPreferences,
+  writeSnippetLastSuccessfulUpload,
+  writeSnippetAutoUploadSelection,
+  writeSnippetRemoteContentHash,
+  withSnippetSyncLock,
+} from "@/lib/cloudSync/snippetAutoUploadConfig";
 import { createModifierDoubleTapShortcutController } from "@/lib/editor/modifierDoubleTapShortcut";
 import { eventToModifierOnlyShortcut, eventToShortcut } from "@/lib/editor/keyboardShortcuts";
 import { shortcutRecorderAction } from "@/lib/editor/shortcutRecorder";
 import {
-  SHORTCUT_DEFINITIONS, countShortcutConflictPairs, filterShortcutConflictsByVisibleIds, findCrossScopeShortcutConflicts, findShortcutConflict, isReservedShortcut, normalizeShortcutSettings, resolveCapturedShortcutEdit, type ShortcutActionId, type ShortcutDefinition, type ShortcutScope, } from "@/lib/editor/shortcutRegistry";
+  SHORTCUT_DEFINITIONS,
+  countShortcutConflictPairs,
+  filterShortcutConflictsByVisibleIds,
+  findCrossScopeShortcutConflicts,
+  findShortcutConflict,
+  isReservedShortcut,
+  normalizeShortcutSettings,
+  resolveCapturedShortcutEdit,
+  type ShortcutActionId,
+  type ShortcutDefinition,
+  type ShortcutScope,
+} from "@/lib/editor/shortcutRegistry";
 import LightTooltip from "@/components/ui/LightTooltip.vue";
 import { formatShortcutDisplay, normalizeShortcutSearch } from "@/lib/editor/shortcutDisplay";
 import { COLUMN_NAME_COPY_SEPARATOR_LABELS, COLUMN_NAME_COPY_SEPARATOR_OPTIONS, isColumnNameCopySeparator, type ColumnNameCopySeparator } from "@/lib/dataGrid/dataGridColumnNameCopy";
@@ -73,14 +261,36 @@ import { currentExecutableStatementRange, type SqlTextRange } from "@/lib/sql/sq
 import { executableStatementRangeCacheForDoc, executableStatementRangeStartingAt, type ExecutableStatementRangeCache } from "@/lib/sql/executableStatementRangeCache";
 import { EMPTY_TABLE_COLUMN_TEMPLATE_DATA_TYPE, parseTableColumnTemplateFields, TABLE_COLUMN_TEMPLATE_DATABASE_TYPES, tableColumnTemplateRowsToSettings } from "@/lib/table/tableColumnTemplates";
 import {
-  isModeDependentSubstitutionDatabase, normalizeSqlVariableSyntaxOverrides, resolveSqlVariableSyntaxToggles, SQL_VARIABLE_SYNTAX_DATABASE_TYPES, SQL_VARIABLE_SYNTAX_KEYS, SQL_VARIABLE_SYNTAX_TOKENS, type SqlVariableSyntaxOverrides, type SqlVariableSyntaxToggles, updateSqlVariableSyntaxToggle, } from "@/lib/sql/sqlVariableSyntax";
+  isModeDependentSubstitutionDatabase,
+  normalizeSqlVariableSyntaxOverrides,
+  resolveSqlVariableSyntaxToggles,
+  SQL_VARIABLE_SYNTAX_DATABASE_TYPES,
+  SQL_VARIABLE_SYNTAX_KEYS,
+  SQL_VARIABLE_SYNTAX_TOKENS,
+  type SqlVariableSyntaxOverrides,
+  type SqlVariableSyntaxToggles,
+  updateSqlVariableSyntaxToggle,
+} from "@/lib/sql/sqlVariableSyntax";
 import { combineDataTypeForDatabase, dataTypeLengthInputValue, getDataTypeOptions, getDefaultLengthForType, isDataTypeLengthDisabled, splitDataType } from "@/lib/table/tableStructureEditorState";
 import { useToast } from "@/composables/useToast";
 import { getCcSwitchPluginStatus, isCcSwitchPluginAvailable, isMagpieImportAvailable, MAGPIE_IMPORT_MINIMUM_PLUGIN_VERSION } from "@/lib/ai/ccSwitch";
 import { uuid } from "@/lib/common/utils";
 import { DEFAULT_SQL_SHORTCUT_SELECT_LIMIT } from "@/lib/sql/sqlDialectSelectLimit";
 import {
-  BUILTIN_SQL_SHORTCUT_COUNT_ID, BUILTIN_SQL_SHORTCUT_SELECT_LIMIT_ID, canonicalSqlShortcutSql, DEFAULT_SQL_SHORTCUTS, findSqlShortcutConflicts, hasSqlShortcutConflicts as sqlShortcutsHaveConflicts, isBuiltinSqlShortcut, mergeDefaultSqlShortcuts, normalizeSqlShortcutLimit, resolveSqlShortcutBody, SQL_SHORTCUT_TABLE_TOKEN, sqlShortcutDisplaySql, deriveSqlShortcutDatabaseTypes, } from "@/lib/sql/sqlShortcutActions";
+  BUILTIN_SQL_SHORTCUT_COUNT_ID,
+  BUILTIN_SQL_SHORTCUT_SELECT_LIMIT_ID,
+  canonicalSqlShortcutSql,
+  DEFAULT_SQL_SHORTCUTS,
+  findSqlShortcutConflicts,
+  hasSqlShortcutConflicts as sqlShortcutsHaveConflicts,
+  isBuiltinSqlShortcut,
+  mergeDefaultSqlShortcuts,
+  normalizeSqlShortcutLimit,
+  resolveSqlShortcutBody,
+  SQL_SHORTCUT_TABLE_TOKEN,
+  sqlShortcutDisplaySql,
+  deriveSqlShortcutDatabaseTypes,
+} from "@/lib/sql/sqlShortcutActions";
 import { applySqlShortcutBodyToAllSelected, buildSqlShortcutBodiesForSave, clearSqlShortcutFormDatabaseTypes as clearSqlShortcutFormBodies, switchSqlShortcutEditingDatabaseType, toggleSqlShortcutFormDatabaseType, type SqlShortcutFormBodies } from "@/lib/sql/sqlShortcutFormBodies";
 import { DEFAULT_SQL_SNIPPETS } from "@/lib/sql/sqlCompletion";
 import AiProviderLogo from "@/components/icons/AiProviderLogo.vue";
@@ -91,7 +301,17 @@ import SqlFormatterSettingsPanel from "./SqlFormatterSettingsPanel.vue";
 import { APP_CUSTOM_UI_COLOR_DEFS, APP_THEME_PALETTES, type AppCornerStyle, type AppCustomUiColors, type AppThemeAppearance, type AppThemeMode, type AppThemePalette } from "@/lib/app/appTheme";
 import { BACKGROUND_IMAGE_DISPLAY_MODES, BACKGROUND_IMAGE_STORAGE_LIMIT_BYTES, defaultBackgroundImageSettings, normalizeBackgroundImageDisplayMode, type BackgroundImageSettings } from "@/lib/app/appBackgroundImage";
 import {
-  editorSettingsDraftChanged, editorSettingsDraftFromSettings, editorSettingsDraftPatchFromSettings, editorSettingsPatchFromDraft, normalizeQueryResultMaxRowsDraft, normalizeTableOpenPageSizeDraft, shouldConfirmEditorSettingsDialogClose, type EditorSettingsDraft, type EditorSettingsDraftKey, type EditorSettingsImportPatch, } from "@/lib/settings/editorSettingsDraft";
+  editorSettingsDraftChanged,
+  editorSettingsDraftFromSettings,
+  editorSettingsDraftPatchFromSettings,
+  editorSettingsPatchFromDraft,
+  normalizeQueryResultMaxRowsDraft,
+  normalizeTableOpenPageSizeDraft,
+  shouldConfirmEditorSettingsDialogClose,
+  type EditorSettingsDraft,
+  type EditorSettingsDraftKey,
+  type EditorSettingsImportPatch,
+} from "@/lib/settings/editorSettingsDraft";
 import { applyEditorSettingsDraftToRefs, type EditorSettingsDraftRefMap } from "@/lib/settings/applyEditorSettingsDraft";
 import { pickTransferableDesktopSettings, serializeSettingsTransfer, sortTransferCategories, transferCategoryForKey, type SettingsTransferCategoryId, type SettingsTransferExtras, type TransferableDesktopSettings, type TransferableDesktopSettingsKey } from "@/lib/settings/settingsTransfer";
 import { useConnectionStore } from "@/stores/connectionStore";
@@ -102,13 +322,38 @@ import { usePromptTemplateStore } from "@/stores/promptTemplateStore";
 import { useTunnelProfileStore } from "@/stores/tunnelProfileStore";
 import { currentLocale, previewLocale, restoreLocalePreview, setLocale, type Locale } from "@/i18n";
 import {
-  AI_CONVERSATION_FONT_FAMILY_DEFAULT, AI_CONVERSATION_FONT_SIZE_DEFAULT, AI_CONVERSATION_FONT_SIZE_MAX, AI_CONVERSATION_FONT_SIZE_MIN, aiConversationFontFamilyForName, normalizeAiConversationFontFamily, normalizeAiConversationFontFamilyInput, normalizeAiConversationFontSize, } from "@/lib/ai/aiTypography";
+  AI_CONVERSATION_FONT_FAMILY_DEFAULT,
+  AI_CONVERSATION_FONT_SIZE_DEFAULT,
+  AI_CONVERSATION_FONT_SIZE_MAX,
+  AI_CONVERSATION_FONT_SIZE_MIN,
+  aiConversationFontFamilyForName,
+  normalizeAiConversationFontFamily,
+  normalizeAiConversationFontFamilyInput,
+  normalizeAiConversationFontSize,
+} from "@/lib/ai/aiTypography";
 import { SETTINGS_SEARCH_DEFINITIONS, TOOLBAR_VISIBILITY_ITEMS, createShortcutSettingsSearchDefinitions, resolveSettingsCategory, resolveSettingsSearchEntries, searchSettings, visibleToolbarVisibilityItems, type SettingsCategory, type SettingsSearchEntry } from "@/lib/settings/settingsSearch";
 import { findSettingsSearchHighlightTarget } from "@/lib/settings/settingsSearchHighlight";
 import { LOCALE_OPTIONS } from "@/lib/app/localeOptions";
 import LocaleFlag from "@/components/icons/LocaleFlag.vue";
 import {
-  DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES, DEFAULT_WEB_DAV_REMOTE_PATH, MAX_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES, formatWebDavAutoUploadInterval, normalizedWebDavAutoUploadInterval, readWebDavLastSuccessfulSync, recordWebDavSyncSuccess, readSyncMethod, WEB_DAV_LAST_SUCCESSFUL_SYNC_STORAGE_KEY, WEB_DAV_SYNC_SUCCESS_EVENT, readWebDavAutoUploadConfig, webDavSyncTarget, writeWebDavAutoUploadFields, writeWebDavBackupSelection, writeWebDavLastUploadAt, writeSyncMethod, type SyncMethod, } from "@/lib/webdav/webdavAutoUploadConfig";
+  DEFAULT_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES,
+  DEFAULT_WEB_DAV_REMOTE_PATH,
+  MAX_WEB_DAV_AUTO_UPLOAD_INTERVAL_MINUTES,
+  formatWebDavAutoUploadInterval,
+  normalizedWebDavAutoUploadInterval,
+  readWebDavLastSuccessfulSync,
+  recordWebDavSyncSuccess,
+  readSyncMethod,
+  WEB_DAV_LAST_SUCCESSFUL_SYNC_STORAGE_KEY,
+  WEB_DAV_SYNC_SUCCESS_EVENT,
+  readWebDavAutoUploadConfig,
+  webDavSyncTarget,
+  writeWebDavAutoUploadFields,
+  writeWebDavBackupSelection,
+  writeWebDavLastUploadAt,
+  writeSyncMethod,
+  type SyncMethod,
+} from "@/lib/webdav/webdavAutoUploadConfig";
 import { apiUrl, webPath } from "@/lib/common/webPath";
 import { DEFAULT_DATA_GRID_FONT_FAMILY, DEFAULT_UI_FONT_FAMILY, normalizeCustomFontFamilyInput, readableFontFamily, SYSTEM_UI_FONT_FAMILY } from "@/lib/app/appFonts";
 import { buildFontFamilyOptions, displayFontFamily, isPresetFontFamily, loadSystemFontNames } from "@/lib/app/fontFamilyOptions";
@@ -333,7 +578,6 @@ const settingsContentClass = computed(() =>
 const settingsTitleComponent = computed(() => (isSettingsPage.value ? "h2" : DialogTitle));
 
 const showUnsavedSettingsCloseConfirm = ref(false);
-
 
 function finishSettingsClose(nextOpen: boolean) {
   emit("update:open", nextOpen);
@@ -2403,7 +2647,6 @@ const queryResultRowLimitDraftTouched = computed(
 const hasBlockingQueryResultRowLimit = computed(() => queryResultRowLimitViolated.value && queryResultRowLimitDraftTouched.value);
 const hasApplyBlocker = computed(() => historyRetention.invalid.value || mcpHistoryRetention.invalid.value || historyRetentionSaving.value || mcpHistoryRetentionSaving.value || hasBlockingShortcutConflicts.value || hasBlockingFormatterConfig.value || hasBlockingQueryResultRowLimit.value);
 
-
 function hasChanges(): boolean {
   return (
     historyRetention.changed.value ||
@@ -3598,21 +3841,24 @@ const appSupportInfoRows = computed(() => {
     return { ...row, tooltip: details.join("\n") };
   });
 });
-const settingsCategoryNav = computed(() => ([
-  { value: "appearance", label: t("settings.appearanceTab") },
-  { value: "editor", label: t("settings.editorTab") },
-  { value: "formatter", label: t("settings.sqlFormatterTab") },
-  { value: "navigation", label: t("settings.navigationTab") },
-  { value: "data", label: t("settings.dataTab") },
-  { value: "backups" as const, label: t("databaseBackup.title") },
-  { value: "tunnels", label: t("settings.tunnelsTab") },
-  { value: "shortcuts", label: t("settings.shortcutsTab") },
-  { value: "snippets", label: t("settings.snippetsTab") },
-  { value: "sync", label: t("settings.syncTab") },
-  { value: "ai", label: t("settings.aiTab") },
-  ...(isWeb ? [{ value: "security" as const, label: t("settings.securityTab") }] : []),
-  { value: "about", label: t("settings.aboutTab") },
-] as { value: SettingsCategory; label: string }[]));
+const settingsCategoryNav = computed(
+  () =>
+    [
+      { value: "appearance", label: t("settings.appearanceTab") },
+      { value: "editor", label: t("settings.editorTab") },
+      { value: "formatter", label: t("settings.sqlFormatterTab") },
+      { value: "navigation", label: t("settings.navigationTab") },
+      { value: "data", label: t("settings.dataTab") },
+      { value: "backups" as const, label: t("databaseBackup.title") },
+      { value: "tunnels", label: t("settings.tunnelsTab") },
+      { value: "shortcuts", label: t("settings.shortcutsTab") },
+      { value: "snippets", label: t("settings.snippetsTab") },
+      { value: "sync", label: t("settings.syncTab") },
+      { value: "ai", label: t("settings.aiTab") },
+      ...(isWeb ? [{ value: "security" as const, label: t("settings.securityTab") }] : []),
+      { value: "about", label: t("settings.aboutTab") },
+    ] as { value: SettingsCategory; label: string }[],
+);
 const settingsTabsWithApplyFooter = new Set<SettingsCategory>(["editor", "formatter", "appearance", "navigation", "data", "shortcuts", "snippets"]);
 
 function hasSettingsApplyFooter(value: SettingsCategory): boolean {
@@ -3719,12 +3965,7 @@ function revealSettingsSearchTarget(result: SettingsSearchEntry) {
 }
 
 function settingsSearchRouteIsActive(result: SettingsSearchEntry): boolean {
-  return (
-    settingsVisible.value &&
-    activeSettingsTab.value === result.category &&
-    (!result.route?.syncMethodTab || syncMethodTab.value === result.route.syncMethodTab) &&
-    (!result.route?.formatterMode || formatterMode.value === result.route.formatterMode)
-  );
+  return settingsVisible.value && activeSettingsTab.value === result.category && (!result.route?.syncMethodTab || syncMethodTab.value === result.route.syncMethodTab) && (!result.route?.formatterMode || formatterMode.value === result.route.formatterMode);
 }
 
 function watchSettingsSearchNavigation() {
@@ -6256,7 +6497,6 @@ async function copyAiTestError() {
     aiTestErrorCopied.value = false;
   }, 1500);
 }
-
 
 // ---------- CodeMirror preview ----------
 const previewRef = ref<HTMLDivElement>();
@@ -8858,25 +9098,6 @@ onUnmounted(() => {
                 <div v-if="historyRetentionLoadError" class="flex items-center gap-2 text-xs text-destructive" role="alert">
                   <span>{{ t("settings.historyRetentionLoadFailed", { error: historyRetentionLoadError }) }}</span>
                   <Button type="button" variant="outline" size="sm" @click="historyRetention.load">{{ t("common.retry") }}</Button>
-                </div>
-              </div>
-              <div data-settings-search-id="mcp-history-retention" :class="['flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2', settingsSearchTargetClass('mcp-history-retention')]">
-                <div class="min-w-0 space-y-1">
-                  <Label for="mcp-history-retention-limit">{{ t("settings.mcpHistoryRetentionLimit") }}</Label>
-                  <p class="text-xs text-muted-foreground">{{ t("settings.mcpHistoryRetentionDescription") }}</p>
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                  <Select :model-value="String(editMcpHistoryRetentionLimit)" :disabled="!mcpHistoryRetentionLoaded || mcpHistoryRetentionSaving" @update:model-value="(value) => (editMcpHistoryRetentionLimit = Number(value))">
-                    <SelectTrigger id="mcp-history-retention-limit" class="w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent
-                      ><SelectItem v-for="limit in HISTORY_RETENTION_LIMITS" :key="limit" :value="String(limit)">{{ limit === 0 ? t("settings.historyRetentionUnlimited") : String(limit) }}</SelectItem></SelectContent
-                    >
-                  </Select>
-                  <p v-if="mcpHistoryRetentionLoading" class="text-xs text-muted-foreground">{{ t("common.loading") }}</p>
-                  <div v-if="mcpHistoryRetentionLoadError" class="flex items-center gap-2 text-xs text-destructive" role="alert">
-                    <span>{{ t("settings.historyRetentionLoadFailed", { error: mcpHistoryRetentionLoadError }) }}</span>
-                    <Button type="button" variant="outline" size="sm" @click="mcpHistoryRetention.load">{{ t("common.retry") }}</Button>
-                  </div>
                 </div>
               </div>
               <div id="data-grid-toolbar-layout" data-settings-search-id="data-grid-toolbar-layout" :class="['settings-item flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2', settingsSearchTargetClass('data-grid-toolbar-layout')]">
@@ -11553,7 +11774,6 @@ LIMIT 100;</pre>
               </div>
             </section>
 
-
             <section v-else-if="activeSettingsTab === 'updates'" data-settings-search-id="updates" :class="['flex flex-col gap-5 py-2', settingsSearchTargetClass('updates')]">
               <div class="space-y-3 rounded-lg border bg-muted/20 p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -11815,13 +12035,11 @@ LIMIT 100;</pre>
                     {{ t("settings.contactWechat") }}
                     <Copy class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
                   </div>
-                  <div class="mt-1 text-sm text-primary">
-                    tianyuyaoxi
-                  </div>
+                  <div class="mt-1 text-sm text-primary">tianyuyaoxi</div>
                 </button>
                 <button type="button" class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" @click="openExternalUrl('https://gitee.com/weiyaoxi/dbx-lite.git')">
                   <div class="flex items-center gap-2 text-sm font-medium">
-                    <img src="https://cdn.simpleicons.org/gitee/C71D23" alt="Gitee" class="h-7 w-7 rounded-md bg-white p-1" />
+                    <img :src="webPath('/icons/brand/gitee.svg')" alt="Gitee" class="h-7 w-7 rounded-md bg-white p-1" />
                     {{ t("settings.contactGit") }}
                     <ExternalLink class="ml-auto h-3.5 w-3.5 text-muted-foreground" />
                   </div>
@@ -11914,7 +12132,6 @@ LIMIT 100;</pre>
         </Button>
       </DialogFooter>
 
-
       <DialogFooter v-else-if="activeSettingsTab === 'security' && isWeb" class="shrink-0 mx-0 mb-0 flex-row flex-wrap items-center justify-end gap-2 rounded-none border-t border-border/60 bg-transparent px-0 pb-0 pt-3 sm:flex-row sm:gap-2 [&>button]:w-auto [&>button]:shrink-0">
         <Button variant="outline" @click="closeSettings">
           {{ t("common.close") }}
@@ -11940,7 +12157,6 @@ LIMIT 100;</pre>
         </Button>
       </DialogFooter>
     </component>
-
 
     <!-- Unsaved settings confirmation: guards every close path (Escape, outside click, the X button, and the footer "Close" button) so an unapplied draft is never silently discarded. -->
     <Dialog :open="showUnsavedSettingsCloseConfirm" @update:open="(value: boolean) => !value && cancelUnsavedSettingsClose()">

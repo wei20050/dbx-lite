@@ -3,6 +3,7 @@ import { connectionDisplayUrlScheme } from "@/lib/connection/connectionPresentat
 import { redactConnectionStringSecrets } from "@/lib/connection/connectionStringRedaction";
 import { encodeOceanBaseUrlUsername } from "@/lib/connection/connectionUrlBuilder";
 import { encodeSpannerResourcePath } from "@/lib/connection/spannerResourcePath";
+import { CONNECTION_PROFILES } from "@/types/generated/connectionProfiles";
 import { effectiveRedisDatabaseIndex } from "@/lib/redis/redisDatabaseIndex";
 
 export type ConnectionDetailRow = {
@@ -18,6 +19,23 @@ export type ConnectionDetailVisibleFilter = Pick<ConnectionDetailRow, "label" | 
 
 function clean(value: string | number | null | undefined): string {
   return String(value ?? "").trim();
+}
+
+/**
+ * Display name for the hover-details "type" row. The catalog label wins so
+ * every supported database shows a friendly name (MariaDB, GaussDB, KWDB, ...)
+ * instead of a raw profile key or an empty driver label.
+ */
+function connectionTypeDisplayName(config: ConnectionConfig): string {
+  const profiles = CONNECTION_PROFILES as Record<string, { label: string } | undefined>;
+  const profile = clean(config.driver_profile);
+  if (profile) {
+    const entry = profiles[profile];
+    if (entry?.label) return entry.label;
+  }
+  const byType = profiles[config.db_type];
+  if (byType?.label) return byType.label;
+  return clean(config.driver_label) || config.db_type;
 }
 
 export function isLocalFileConnection(config: Pick<ConnectionConfig, "db_type" | "port">): boolean {
@@ -78,7 +96,7 @@ export function connectionDetailRows(config: ConnectionConfig, translate: (key: 
     { label: "Port", value: Number(config.port) > 0 ? String(config.port) : "" },
     { label: translate("connection.database"), value: databaseValue(config) },
     { label: translate("connection.user"), value: clean(config.username) },
-    { label: translate("connection.type"), value: config.driver_label || config.driver_profile || config.db_type },
+    { label: translate("connection.type"), value: connectionTypeDisplayName(config) },
     { label: translate("connection.databaseInfo.productVersion"), value: productVersion },
     ...(visibleFilter ? [visibleFilter] : []),
     { label: translate("connection.note"), value: clean(config.note), multiline: true },

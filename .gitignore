@@ -17,6 +17,8 @@ CLAUDE.md
 
 # Build output
 dist/
+dist.prev-*/
+dist-build*/
 coverage/
 /target/
 vendor/wry/target/
@@ -111,3 +113,4 @@ dbx-devtest-connections.json
 # Real database integration credentials (see docs/TEST_ENVIRONMENTS.md)
 /docs/TEST_ENVIRONMENTS.md
 .wrangler/
+/tools

@@ -146,8 +146,7 @@ import { copyDialogPasswordFieldValue, preventDialogDocumentSelectAll } from "@/
 import { postgresLegacyTlsEnabled, postgresTlsModeForForm, setPostgresLegacyTlsEnabled } from "@/lib/connection/postgresTlsMode";
 import { buildMqKafkaConnectionExtra, mqKafkaConnectionTarget, resolveMqKafkaConnectionSource, type MqKafkaConnectionSource } from "@/lib/connection/mqKafkaConnection";
 import { buildKafkaTlsSection, kafkaTlsFromExternalConfig, type KafkaTlsConfig } from "@/lib/connection/kafkaTlsOptions";
-import { assertCompleteDatabaseCategories, databaseSelectionForCategory } from "@/lib/connection/databaseCategoryOptions";
-import { loadConnectionPickerView, saveConnectionPickerView, type DbPickerView } from "@/lib/connection/connectionPickerViewPreference";
+import { assertCompleteDatabaseCategories } from "@/lib/connection/databaseCategoryOptions";
 import { buildRocketMqConfig, hydrateRocketMqConfig, isRocketMqConfigValid, rocketMqConnectionTarget } from "@/lib/connection/rocketmqConfig";
 import { normalizeRabbitmqAddresses, parseRabbitmqAddress } from "@/lib/connection/rabbitmqAddresses";
 import { pluginFieldHasValue as pluginFieldHasValueOf, pluginFieldIsRequired, pluginFieldIsVisible } from "@/lib/plugins/pluginFieldConditions";
@@ -171,10 +170,8 @@ import {
   FilePlus2,
   FolderOpen,
   GripVertical,
-  Grid3X3,
   KeyRound,
   Link2,
-  List,
   ListFilter,
   Loader2,
   Pencil,
@@ -251,15 +248,7 @@ import {
   rememberJdbcProductConnectionFields,
   type JdbcProductConnectionFieldsByMode,
 } from "@/lib/database/jdbcProductProfile";
-import {
-  ensureRegisteredJdbcProductRuntimeDrivers,
-  jdbcProductDriverProfiles,
-  jdbcProductIconTypes,
-  jdbcProductPickerOptions,
-  jdbcProductProfileDefinition,
-  jdbcProductProfileForConfig,
-  jdbcProductProfileIdsForCategory,
-} from "@/lib/database/jdbcProductProfiles";
+import { ensureRegisteredJdbcProductRuntimeDrivers, jdbcProductDriverProfiles, jdbcProductIconTypes, jdbcProductPickerOptions, jdbcProductProfileDefinition, jdbcProductProfileForConfig, jdbcProductProfileIdsForCategory } from "@/lib/database/jdbcProductProfiles";
 
 type DbOption = Omit<ConnectionPickerOption, "category"> & { category?: DbCategoryKey; plugin?: boolean; pluginId?: string; pluginIcon?: string };
 type DbCategoryKey = ConnectionProfileCategory | "plugins";
@@ -450,14 +439,14 @@ function initialConfigTab(): ConfigTab {
 const defaultForm = (): ConnectionForm => ({
   name: "",
   note: "",
-  db_type: "mysql",
-  driver_profile: "mysql",
-  driver_label: "MySQL",
+  db_type: "sqlite",
+  driver_profile: "sqlite",
+  driver_label: "SQLite",
   url_params: "",
   agent_java_options: [],
-  host: "127.0.0.1",
-  port: 3306,
-  username: "root",
+  host: "",
+  port: 0,
+  username: "",
   password: "",
   database: undefined,
   color: "",
@@ -934,7 +923,7 @@ const idleDisconnectKeepaliveWarning = computed(() => {
 
 const selectedTransportLayerId = ref<string | null>(null);
 const draggedTransportLayerId = ref<string | null>(null);
-const selectedType = ref("mysql");
+const selectedType = ref("sqlite");
 const pluginRegistry = computed(() => createFrontendPluginRegistry(installedPlugins.value, appLocale.value));
 const pluginConnectionProviders = computed(() => pluginRegistry.value.listConnectionProviders());
 const selectedPluginProvider = computed(() => pluginProviderEntryForOption(selectedType.value));
@@ -981,9 +970,8 @@ const hiveUseSubjectCredsOnlyFalse = ref(false);
 const hiveExtraJavaOptions = ref("");
 const damengJvmOptions = ref("");
 const dialogStep = ref<DialogStep>("select");
-const dbPickerView = ref<DbPickerView>(loadConnectionPickerView());
 const dbSearchQuery = ref("");
-const selectedDbCategory = ref<DbCategoryKey>("sql");
+const selectedDbCategory = ref<DbCategoryKey>("lightweight");
 const configTab = ref<ConfigTab>("connection");
 
 // 对话框拖动功能
@@ -3502,7 +3490,7 @@ watch(
       redisKeyTemplatesText.value = "";
       productionProtectionEnabled.value = false;
       selectedTransportLayerId.value = null;
-      selectedType.value = "mysql";
+      selectedType.value = "sqlite";
       pluginFormValues.value = {};
       customDriverName.value = "";
       resetMqFields();
@@ -3745,7 +3733,8 @@ function switchH2DriverProfile(profile: "h2" | "h2-v1" | "h2-v2" | "h2-v3" | "h2
 // OCI（thick）驱动目前只发布 Windows x64 产物：非 Windows 平台不显示模式切换，
 // 避免用户选到无法安装的驱动。已保存的 OCI 连接仍按原样打开（连接时会得到
 // 明确的“驱动未安装”错误），并把 Thin 按钮留在原地便于切回。
-const oracleOciDriverSelectable = isWindows();
+// This build bundles only the thin Oracle agent, so OCI is not offered at all.
+const oracleOciDriverSelectable = false;
 
 function switchOracleDriverMode(mode: "thin" | "oci") {
   form.value.driver_profile = mode === "oci" ? "oci" : "oracle";
@@ -3983,40 +3972,60 @@ function matchesDbOption(option: DbOption, keyword: string, categoryTitle = "") 
 
 const isDbSearchActive = computed(() => !!dbSearchQuery.value.trim());
 
-const filteredDbCategories = computed<DbCategory[]>(() => {
+// New-connection picker order, mirroring the catalog order.
+const DB_PICKER_ORDER: readonly string[] = [
+  "sqlite",
+  "redis",
+  "mongodb",
+  "mysql",
+  "mariadb",
+  "postgres",
+  "sqlserver",
+  "oracle",
+  "gaussdb",
+  "opengauss",
+  "kingbase",
+  "dameng",
+  "nacos",
+  "elasticsearch",
+  "clickhouse",
+  "kwdb",
+  "doris",
+  "starrocks",
+  "redshift",
+  "questdb",
+  "manticoresearch",
+  "easysearch",
+  "solr",
+  "couchdb",
+  "meilisearch",
+  "hbase",
+  "consul",
+  "mqtt",
+];
+
+const dbPickerOptionsInOrder = computed<DbOption[]>(() => {
+  const available = dbOptions.filter((option) => !hiddenPickerOptionTypes.has(option.value));
+  const byValue = new Map(available.map((option) => [option.value, option]));
+  const ordered = DB_PICKER_ORDER.map((value) => byValue.get(value)).filter((option): option is DbOption => Boolean(option));
+  return [...ordered, ...available.filter((option) => !DB_PICKER_ORDER.includes(option.value))];
+});
+
+const filteredDbPickerOptions = computed<DbOption[]>(() => {
+  if (!isDbSearchActive.value) return dbPickerOptionsInOrder.value;
   const keyword = dbSearchQuery.value.trim().toLowerCase();
-  if (!isDbSearchActive.value) return dbCategories.value;
-
-  return dbCategories.value
-    .map((category) => ({
-      ...category,
-      options: category.options.filter((option) => matchesDbOption(option, keyword, category.title)),
-    }))
-    .filter((category) => category.options.length > 0);
+  return dbPickerOptionsInOrder.value.filter((option) => matchesDbOption(option, keyword));
 });
 
-const visibleDbCategories = computed<DbCategory[]>(() => {
-  if (isDbSearchActive.value) return filteredDbCategories.value;
-  return filteredDbCategories.value.filter((category) => category.key === selectedDbCategory.value);
-});
-const hasDbPickerResults = computed(() => visibleDbCategories.value.some((category) => category.options.length > 0));
+const hasDbPickerResults = computed(() => filteredDbPickerOptions.value.length > 0);
 function isPickerOptionSelected(optionValue: string): boolean {
   return selectedType.value === optionValue || MERGED_PICKER_OPTION_FOR_TYPE[selectedType.value] === optionValue;
 }
 
-const selectedDbOptionIsVisible = computed(() => visibleDbCategories.value.some((category) => category.options.some((option) => isPickerOptionSelected(option.value))));
+const selectedDbOptionIsVisible = computed(() => filteredDbPickerOptions.value.some((option) => isPickerOptionSelected(option.value)));
 
-function selectDbCategory(category: DbCategoryKey) {
-  selectedDbCategory.value = category;
-  dbSearchQuery.value = "";
-  const categoryOptions = dbCategories.value.find((definition) => definition.key === category)?.options.map((option) => option.value) ?? [];
-  const nextSelection = databaseSelectionForCategory(selectedType.value, categoryOptions);
-  if (nextSelection && nextSelection !== selectedType.value) onDbTypeChange(nextSelection);
-}
-
-function selectDbPickerView(view: DbPickerView) {
-  dbPickerView.value = view;
-  saveConnectionPickerView(view);
+function selectDbPickerView(_view: unknown) {
+  // Kept for callers/tests that still toggle the (now removed) picker view.
 }
 
 function dbCategoryForOption(value: string): DbCategoryKey | undefined {
@@ -4558,7 +4567,7 @@ const agentInstallProgressLabel = computed(() => {
 const canCloseAgentInstallDialog = computed(() => !agentInstallRunning.value || !!agentInstallError.value);
 const sqlServerDriverMode = computed<"auto" | "legacy">(() => (sqlServerUsesLegacyCompatibility(form.value) ? "legacy" : "auto"));
 const connectionDialogContentClass = computed(() => {
-  if (dialogStep.value === "select") return "connection-dialog-content--picker sm:h-[720px] sm:max-w-[880px]";
+  if (dialogStep.value === "select") return "connection-dialog-content--picker sm:h-[640px]";
   const scrollableAdvancedNacos = form.value.db_type === "nacos" && configTab.value === "advanced";
   return `connection-dialog-content--config max-w-[660px]${scrollableAdvancedNacos ? " connection-dialog-content--scrollable" : ""}`;
 });
@@ -6509,7 +6518,7 @@ function resetForm(options: { preservePickerState?: boolean } = {}) {
   editRedisValuePreviewLimitKiB.value = settingsStore.editorSettings.redisValuePreviewLimitKiB;
   selectedTransportLayerId.value = null;
   draggedTransportLayerId.value = null;
-  selectedType.value = "mysql";
+  selectedType.value = "sqlite";
   pluginFormValues.value = {};
   customDriverName.value = "";
   mongoUseUrl.value = false;
@@ -7641,7 +7650,6 @@ onUnmounted(() => {
   // closing the dialog does not leave orphan timers running.
   salesforceDeviceStopPolling();
 });
-
 </script>
 
 <template>
@@ -7653,106 +7661,33 @@ onUnmounted(() => {
 
       <template v-if="dialogStep === 'select'">
         <div class="flex min-h-0 flex-1 flex-col gap-4">
-          <div class="connection-db-picker-toolbar flex flex-col gap-3 p-0.5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="connection-db-picker-toolbar flex flex-col gap-3 p-0.5 sm:flex-row sm:items-center">
             <div class="flex items-center gap-2">
-              <div class="flex shrink-0 rounded-lg border bg-muted/40 p-0.5">
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  :class="dbPickerView === 'icon' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : undefined"
-                  :title="t('connection.iconView')"
-                  :aria-label="t('connection.iconView')"
-                  :aria-pressed="dbPickerView === 'icon'"
-                  @click="selectDbPickerView('icon')"
-                >
-                  <Grid3X3 class="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  :class="dbPickerView === 'list' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : undefined"
-                  :title="t('connection.listView')"
-                  :aria-label="t('connection.listView')"
-                  :aria-pressed="dbPickerView === 'list'"
-                  @click="selectDbPickerView('list')"
-                >
-                  <List class="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div class="connection-db-picker-search relative w-full sm:w-64">
+              <div class="connection-db-picker-search relative w-full">
                 <Search class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input data-connection-db-search v-model="dbSearchQuery" v-connection-dialog-auto-focus class="h-9 pl-8" :placeholder="t('connection.searchDatabasePlaceholder')" />
               </div>
             </div>
-            <Button data-jdbc-connection-entry type="button" variant="outline" class="h-9 shrink-0 gap-2" @click="goToConnectionStep('jdbc')">
-              <DatabaseIcon db-type="jdbc" class="h-4 w-4" />
-              {{ t("connection.jdbcConnection") }}
-            </Button>
           </div>
 
-          <div class="connection-db-picker-body min-h-0 flex flex-1 flex-col gap-3 overflow-hidden sm:flex-row sm:gap-4">
-            <nav data-connection-category-nav class="flex shrink-0 gap-1 overflow-x-auto border-b px-0.5 pt-0.5 pb-2.5 sm:w-40 sm:flex-col sm:overflow-y-auto sm:border-b-0 sm:border-r sm:py-0.5 sm:pr-3.5" :aria-label="t('connection.databaseCategories')">
-              <button
-                v-for="category in dbCategories"
-                :key="category.key"
-                type="button"
-                class="connection-db-category-option shrink-0 whitespace-nowrap rounded-[4px] px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-full"
-                :class="!isDbSearchActive && selectedDbCategory === category.key ? 'connection-db-category-option--selected bg-primary/10 font-medium text-primary hover:bg-primary/10' : 'text-muted-foreground hover:bg-muted/70'"
-                :aria-current="!isDbSearchActive && selectedDbCategory === category.key ? 'page' : undefined"
-                @click="selectDbCategory(category.key)"
-              >
-                {{ category.title }}
-              </button>
-            </nav>
-
-            <div class="connection-db-picker-results min-w-0 flex-1 space-y-5 overflow-y-auto p-0.5 pr-2">
-              <div v-if="isDbSearchActive" class="text-sm font-medium">{{ t("connection.searchResults") }}</div>
-
-              <section v-for="category in visibleDbCategories" :key="category.key" class="space-y-2">
-                <h3 v-if="isDbSearchActive" class="text-sm font-medium">{{ category.title }}</h3>
-
-                <div v-if="dbPickerView === 'icon'" class="connection-db-picker-grid grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                  <button
-                    v-for="opt in category.options"
-                    :key="opt.value"
-                    type="button"
-                    :title="opt.label"
-                    class="connection-db-picker-option group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[4px] border bg-background/70 p-3 text-center transition hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected shadow-sm' : 'border-border'"
-                    :aria-pressed="isPickerOptionSelected(opt.value)"
-                    @click="onDbTypeChange(opt.value)"
-                    @dblclick="goToConnectionStep(opt.value)"
-                  >
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 transition group-hover:bg-background">
-                      <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-6 w-6" />
-                      <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-6 w-6" />
-                    </span>
-                    <span class="flex min-h-8 max-w-full items-center justify-center">
-                      <span class="line-clamp-2 text-sm leading-4 font-medium">{{ opt.label }}</span>
-                    </span>
-                  </button>
-                </div>
-
-                <div v-else class="grid gap-2">
-                  <button
-                    v-for="opt in category.options"
-                    :key="opt.value"
-                    type="button"
-                    class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected' : 'border-border'"
-                    :aria-pressed="isPickerOptionSelected(opt.value)"
-                    @click="onDbTypeChange(opt.value)"
-                    @dblclick="goToConnectionStep(opt.value)"
-                  >
-                    <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-5 w-5 shrink-0" />
-                    <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-5 w-5 shrink-0" />
-                    <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}</span>
-                    <span v-if="isDbSearchActive" class="text-xs text-muted-foreground">{{ category.title }}</span>
-                  </button>
-                </div>
-              </section>
+          <div class="connection-db-picker-body min-h-0 flex flex-1 flex-col overflow-hidden">
+            <div class="connection-db-picker-results min-w-0 flex-1 overflow-y-auto p-0.5 pr-2">
+              <div class="connection-db-picker-list grid gap-2">
+                <button
+                  v-for="opt in filteredDbPickerOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="connection-db-picker-option flex items-center gap-3 rounded-[4px] border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  :class="isPickerOptionSelected(opt.value) ? 'dbx-tile-selected' : 'border-border'"
+                  :aria-pressed="isPickerOptionSelected(opt.value)"
+                  @click="onDbTypeChange(opt.value)"
+                  @dblclick="goToConnectionStep(opt.value)"
+                >
+                  <PluginIcon v-if="opt.plugin" :plugin-id="opt.pluginId || ''" :icon="opt.pluginIcon" class="h-5 w-5 shrink-0" />
+                  <DatabaseIcon v-else :db-type="iconTypeMap[opt.value] || opt.value" class="h-5 w-5 shrink-0" />
+                  <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ opt.label }}</span>
+                </button>
+              </div>
 
               <div v-if="!hasDbPickerResults" class="rounded-xl border border-dashed py-12 text-center text-sm text-muted-foreground">
                 {{ t("connection.noDatabaseMatches") }}
@@ -7986,7 +7921,6 @@ onUnmounted(() => {
                       <Input v-model="form.jdbc_driver_class" class="col-span-3" placeholder="org.h2.Driver" />
                     </div>
                   </template>
-
 
                   <!-- JDBC: optional external plugin -->
                   <template v-if="isJdbcConnection">
@@ -11802,6 +11736,13 @@ onUnmounted(() => {
 
 .connection-dialog-content .connection-dialog-footer {
   flex-shrink: 0;
+}
+
+/* The picker is a single narrow list; override DialogContent's default
+ * max-w-sm/w-full explicitly so the dialog width is predictable. */
+.connection-dialog-content--picker {
+  width: min(460px, calc(100vw - 2rem)) !important;
+  max-width: min(460px, calc(100vw - 2rem)) !important;
 }
 
 .connection-dialog-content--config {

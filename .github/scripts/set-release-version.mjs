@@ -6,13 +6,15 @@ import { fileURLToPath } from "node:url";
 
 const tag = process.argv[2] || "";
 const root = resolve(process.argv[3] || fileURLToPath(new URL("../..", import.meta.url)));
-const match = /^v(\d+\.\d+\.\d+)(-beta\.\d{8}\.\d+)?$/.exec(tag);
+const match = /^v(\d+\.\d+(?:\.\d+)?)(-beta\.\d{8}\.\d+)?$/.exec(tag);
 if (!match) {
-  console.error("Usage: set-release-version.mjs <vX.Y.Z[ -beta.YYYYMMDD.N]> [repository_root]");
+  console.error("Usage: set-release-version.mjs <vX.Y[.Z][-beta.YYYYMMDD.N]> [repository_root]");
   process.exit(1);
 }
 
-const version = `${match[1]}${match[2] || ""}`;
+// Tauri/CRA manifest versions must be three components. `v1.0` means `1.0.0`.
+const base = match[1].split(".").length === 2 ? `${match[1]}.0` : match[1];
+const version = `${base}${match[2] || ""}`;
 const jsonFiles = ["package.json", "src-tauri/tauri.conf.json"];
 const cargoFiles = ["src-tauri/Cargo.toml", "crates/dbx-web/Cargo.toml"].filter((path) => existsSync(resolve(root, path)));
 

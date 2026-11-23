@@ -1390,16 +1390,26 @@ impl AgentManager {
         let java = match state.java_runtime.mode {
             JavaRuntimeMode::Managed => {
                 if !self.is_jre_installed(jre_key) {
-                    return Err(format!(
-                        "JRE {jre_key} runtime is not installed. Please install it from the Driver Manager."
-                    ));
+                    // No managed JRE: fall back to any Java 21 already installed
+                    // on the machine (JAVA_HOME -> install directories -> PATH)
+                    // so users never have to configure a runtime themselves.
+                    let java_home = std::env::var_os(JAVA_HOME_ENV);
+                    let path_var = std::env::var_os(PATH_ENV);
+                    resolve_java_runtime_with_scan(java_home.as_deref(), path_var.as_deref()).ok_or_else(|| {
+                        format!(
+                            "JRE {jre_key} runtime is not installed and no Java {MINIMUM_JAVA_MAJOR_VERSION}+ runtime \
+                             was found on this machine. {}",
+                            system_java_missing_error(java_home.as_deref(), path_var.as_deref())
+                        )
+                    })?
+                } else {
+                    self.jre_java_path(jre_key)
                 }
-                self.jre_java_path(jre_key)
             }
             JavaRuntimeMode::System => {
                 let java_home = std::env::var_os(JAVA_HOME_ENV);
                 let path_var = std::env::var_os(PATH_ENV);
-                resolve_system_java_path(java_home.as_deref(), path_var.as_deref())
+                resolve_java_runtime_with_scan(java_home.as_deref(), path_var.as_deref())
                     .ok_or_else(|| system_java_missing_error(java_home.as_deref(), path_var.as_deref()))?
             }
             JavaRuntimeMode::Custom => {
@@ -1804,6 +1814,129 @@ fn resolve_system_java_path(java_home: Option<&OsStr>, path_var: Option<&OsStr>)
         .filter(|dir| !dir.as_os_str().is_empty())
         .map(|dir| dir.join(java_executable_name()))
         .find(|candidate| is_executable_file(candidate))
+}
+
+/// Like [`resolve_system_java_path`], but also scans the usual JDK install
+/// locations and skips runtimes older than [`MINIMUM_JAVA_MAJOR_VERSION`].
+///
+/// Order matters: `JAVA_HOME` is still the user's explicit declaration, then
+/// vendor install directories, then `PATH`. A stale `JAVA_HOME` pointing at
+/// Java 8 therefore no longer hides a working Java 21 elsewhere on the disk.
+fn resolve_java_runtime_with_scan(java_home: Option<&OsStr>, path_var: Option<&OsStr>) -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Some(home) = java_home.filter(|value| !value.is_empty()) {
+        push_java_candidate(&mut candidates, resolve_java_under_root(Path::new(home)));
+    }
+
+    for root in java_install_roots() {
+        push_java_candidate(&mut candidates, resolve_java_under_root(&root));
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        for entry in entries.flatten().take(32) {
+            push_java_candidate(&mut candidates, resolve_java_under_root(&entry.path()));
+        }
+    }
+
+    if let Some(path_var) = path_var.filter(|value| !value.is_empty()) {
+        for dir in std::env::split_paths(path_var) {
+            if dir.as_os_str().is_empty() {
+                continue;
+            }
+            let candidate = dir.join(java_executable_name());
+            if is_executable_file(&candidate) {
+                push_java_candidate(&mut candidates, Some(candidate));
+            }
+        }
+    }
+
+    if let Some(java) = candidates.iter().find(|candidate| {
+        AgentManager::java_major_version(candidate).is_some_and(|major| major >= MINIMUM_JAVA_MAJOR_VERSION)
+    }) {
+        return Some(java.clone());
+    }
+    // Nothing modern found: return the first existing runtime so the version
+    // error can name it ("Detected Java 8 at ...").
+    candidates.into_iter().next()
+}
+
+fn push_java_candidate(candidates: &mut Vec<PathBuf>, path: Option<PathBuf>) {
+    if let Some(path) = path {
+        if !candidates.iter().any(|existing| existing == &path) {
+            candidates.push(path);
+        }
+    }
+}
+
+fn push_existing_dir(roots: &mut Vec<PathBuf>, path: Option<PathBuf>) {
+    if let Some(path) = path {
+        if path.is_dir() && !roots.iter().any(|existing| existing == &path) {
+            roots.push(path);
+        }
+    }
+}
+
+/// Directories that commonly hold JDK/JRE installations. Only one level below
+/// each root is enumerated, keeping the scan bounded and avoiding full-disk
+/// traversal.
+fn java_install_roots() -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    #[cfg(windows)]
+    {
+        for base_env in ["ProgramFiles", "ProgramFiles(x86)"] {
+            let Some(base) = std::env::var_os(base_env).map(PathBuf::from) else {
+                continue;
+            };
+            for vendor in [
+                "Java",
+                "Eclipse Adoptium",
+                "Microsoft",
+                "Amazon Corretto",
+                "Zulu",
+                "BellSoft",
+                "RedHat",
+                "JetBrains",
+                "Android",
+            ] {
+                push_existing_dir(&mut roots, Some(base.join(vendor)));
+            }
+            push_existing_dir(&mut roots, Some(base.join("Android").join("Android Studio").join("jbr")));
+        }
+        if let Some(local) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) {
+            push_existing_dir(&mut roots, Some(local.join("Programs").join("Eclipse Adoptium")));
+            push_existing_dir(&mut roots, Some(local.join("Programs").join("Microsoft")));
+        }
+        if let Some(home) = std::env::var_os("USERPROFILE").map(PathBuf::from) {
+            push_existing_dir(&mut roots, Some(home.join(".jdks")));
+            push_existing_dir(&mut roots, Some(home.join("scoop").join("apps").join("openjdk")));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        push_existing_dir(&mut roots, Some(PathBuf::from("/Library/Java/JavaVirtualMachines")));
+        for formula in ["openjdk", "openjdk@21"] {
+            push_existing_dir(&mut roots, Some(PathBuf::from("/opt/homebrew/opt").join(formula)));
+            push_existing_dir(&mut roots, Some(PathBuf::from("/usr/local/opt").join(formula)));
+        }
+        if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+            push_existing_dir(&mut roots, Some(home.join(".sdkman").join("candidates").join("java")));
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        push_existing_dir(&mut roots, Some(PathBuf::from("/usr/lib/jvm")));
+        push_existing_dir(&mut roots, Some(PathBuf::from("/usr/java")));
+        push_existing_dir(&mut roots, Some(PathBuf::from("/opt/java")));
+        if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+            push_existing_dir(&mut roots, Some(home.join(".sdkman").join("candidates").join("java")));
+        }
+    }
+
+    roots
 }
 
 /// Report where the "system" Java runtime was looked for. Users who configured
