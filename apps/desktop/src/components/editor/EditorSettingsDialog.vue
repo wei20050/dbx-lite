@@ -6934,9 +6934,11 @@ onUnmounted(() => {
         </nav>
 
         <div class="min-w-0 min-h-0 flex-1 overflow-visible pl-1 pr-0 flex flex-col">
-          <div class="shrink-0 px-2 pt-1 pb-3">
+          <!-- pl-1 matches the content column (settingsContentScrollRef px-1),
+               so the search field lines up with the section headings below. -->
+          <div class="shrink-0 pt-1 pr-2 pb-3 pl-1">
             <div ref="settingsSearchInputContainerRef" class="relative">
-              <Search class="pointer-events-none absolute top-1/2 left-4 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search class="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 data-settings-global-search
                 v-model="settingsSearchQuery"
@@ -6948,12 +6950,18 @@ onUnmounted(() => {
                 aria-controls="settings-search-results"
                 :aria-activedescendant="settingsSearchVisible && settingsSearchResults.length ? `settings-search-result-${settingsSearchResults[settingsSearchActiveIndex]?.id}` : undefined"
                 :placeholder="t('settings.searchSettings')"
-                class="h-11 w-full rounded-xl border-border bg-muted/30 pr-10 pl-11 text-sm shadow-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:border-primary focus-visible:bg-background"
+                class="h-9 w-full pr-9 pl-9 text-sm"
                 @focus="settingsSearchOpen = Boolean(settingsSearchQuery.trim())"
                 @keydown="onSettingsSearchKeydown"
               />
-              <button v-if="settingsSearchQuery" type="button" class="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" :aria-label="t('settings.clearSettingsSearch')" @click="exitSettingsSearch">
-                <X class="h-4 w-4" />
+              <button
+                v-if="settingsSearchQuery"
+                type="button"
+                class="absolute top-1/2 right-1.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                :aria-label="t('settings.clearSettingsSearch')"
+                @click="exitSettingsSearch"
+              >
+                <X class="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

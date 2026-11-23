@@ -1143,7 +1143,9 @@ watch(
       </DialogHeader>
 
       <!-- Keep terminal actions reachable while long previews and errors scroll inside the viewport. -->
-      <div ref="scrollBodyRef" data-testid="sql-file-scroll-body" class="grid min-h-0 min-w-0 flex-1 gap-4 overflow-y-auto py-3" @scroll="handleScrollBodyScroll">
+      <!-- px-1 keeps the 3px focus ring on the first/last input from being
+           clipped by overflow-y-auto (which computes overflow-x to auto). -->
+      <div ref="scrollBodyRef" data-testid="sql-file-scroll-body" class="grid min-h-0 min-w-0 flex-1 gap-4 overflow-y-auto px-1 py-3" @scroll="handleScrollBodyScroll">
         <div class="min-w-0 space-y-3">
           <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             {{ t("sqlFile.file") }}
