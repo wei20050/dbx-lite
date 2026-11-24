@@ -17,12 +17,27 @@ pub async fn get_app_support_info() -> AppSupportInfo {
 
 pub(crate) fn current_app_support_info() -> AppSupportInfo {
     AppSupportInfo {
-        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        app_version: display_app_version(env!("CARGO_PKG_VERSION")),
         runtime: "desktop",
         os_name: os_name(),
         os_version: os_version(),
         arch: std::env::consts::ARCH.to_string(),
     }
+}
+
+/// User-facing version: drops a trailing `.0` patch segment (`1.0.0` → `1.0`).
+/// The manifest keeps the full semver because Cargo/Tauri require it.
+fn display_app_version(version: &str) -> String {
+    let trimmed = version.trim().trim_start_matches(['v', 'V']);
+    let (base, suffix) = match trimmed.find(['-', '+']) {
+        Some(index) => (&trimmed[..index], &trimmed[index..]),
+        None => (trimmed, ""),
+    };
+    let mut segments = base.split('.').collect::<Vec<_>>();
+    while segments.len() > 2 && segments.last() == Some(&"0") {
+        segments.pop();
+    }
+    format!("{}{suffix}", segments.join("."))
 }
 
 #[cfg(any(target_os = "macos", test))]

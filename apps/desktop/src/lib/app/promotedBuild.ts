@@ -56,6 +56,17 @@ export function isPromotedBuild(buildVersion: string): boolean {
   return Boolean(build) && build === promotedBuild.value;
 }
 
+/** User-facing version: drops a trailing `.0` patch segment (`1.0.0` → `1.0`). */
+export function shortAppVersion(version: string): string {
+  const trimmed = normalizeBuildVersion(version);
+  const marker = trimmed.search(/[-+]/);
+  const base = marker === -1 ? trimmed : trimmed.slice(0, marker);
+  const suffix = marker === -1 ? "" : trimmed.slice(marker);
+  const parts = base.split(".");
+  while (parts.length > 2 && parts[parts.length - 1] === "0") parts.pop();
+  return parts.join(".") + suffix;
+}
+
 /** Whether the version still carries a prerelease suffix (`-beta.…`). */
 export function isPrereleaseBuild(buildVersion: string): boolean {
   return normalizeBuildVersion(buildVersion).includes("-");

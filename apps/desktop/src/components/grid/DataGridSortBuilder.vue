@@ -38,6 +38,7 @@ const emit = defineEmits<{
   reset: [];
   clear: [];
   apply: [];
+  columnSelectOutside: [target: EventTarget | null, point: { x: number; y: number } | null];
 }>();
 
 const { t } = useI18n();
@@ -64,12 +65,21 @@ let previousBodyCursor = "";
 
 const hasIncompleteActiveRule = computed(() => props.rules.some((rule) => !rule.disabled && !rule.columnName));
 
+function columnComment(column: string) {
+  const comments = props.commentByColumn;
+  return (comments?.get(column) ?? comments?.get(column.toLowerCase()))?.trim() || undefined;
+}
+
+function handleColumnPointerDownOutside(event?: CustomEvent<{ originalEvent?: PointerEvent }>) {
+  const native = event?.detail?.originalEvent;
+  emit("columnSelectOutside", native?.target ?? null, native ? { x: native.clientX, y: native.clientY } : null);
+}
+
 function filteredColumns(rule: DataGridStructuredSortRule): string[] {
   const query = columnSearches.value[rule.id]?.trim() ?? "";
   if (!query) return [...props.columns];
   // Match column comments too, mirroring the filter builder's comment search (#10759).
-  const comments = props.commentByColumn;
-  return props.columns.filter((column) => matchesIdentifierSearch(column, query) || matchesIdentifierSearch(comments?.get(column) ?? comments?.get(column.toLowerCase()) ?? "", query));
+  return props.columns.filter((column) => matchesIdentifierSearch(column, query) || matchesIdentifierSearch(columnComment(column) ?? "", query));
 }
 
 function setRuleElement(id: string, element: unknown) {
@@ -123,6 +133,13 @@ async function handleColumnSelectOpen(rule: DataGridStructuredSortRule, open: bo
   await nextTick();
   window.requestAnimationFrame(() => columnSearchInputs.get(rule.id)?.focus({ preventScroll: true }));
 }
+
+async function openFirstEmptyRuleColumnSearch() {
+  const rule = props.rules.find((item) => !item.columnName && !item.disabled);
+  if (rule) await handleColumnSelectOpen(rule, true);
+}
+
+defineExpose({ openFirstEmptyRuleColumnSearch });
 
 function updateColumnSearch(rule: DataGridStructuredSortRule, event: Event) {
   columnSearches.value = { ...columnSearches.value, [rule.id]: (event.target as HTMLInputElement).value };
@@ -377,9 +394,12 @@ onBeforeUnmount(clearDragState);
             <SelectValue v-if="rule.columnName">{{ rule.columnName }}</SelectValue>
             <SelectValue v-else :placeholder="t('grid.sortBuilderSelectColumn')" />
           </SelectTrigger>
-          <SelectContent position="popper" class="max-h-72" :hide-scroll-buttons="true">
+          <SelectContent position="popper" class="max-h-72" :hide-scroll-buttons="true" @pointer-down-outside="handleColumnPointerDownOutside">
             <SelectItem v-for="(column, columnIndex) in filteredColumns(rule)" :key="column" :value="column" class="rounded-none" :class="activeColumnIndex(rule.id) === columnIndex ? 'bg-accent text-accent-foreground' : ''" @pointermove="setActiveColumnIndex(rule, columnIndex)">
-              {{ column }}
+              <span class="flex w-full min-w-0 items-baseline gap-1.5">
+                <span class="min-w-0 truncate">{{ column }}</span>
+                <span v-if="columnComment(column)" class="min-w-0 max-w-[10rem] shrink truncate text-[10px] text-muted-foreground" :title="columnComment(column)">{{ columnComment(column) }}</span>
+              </span>
             </SelectItem>
             <div v-if="!filteredColumns(rule).length" class="px-2 py-2 text-xs text-muted-foreground">{{ t("grid.filterBuilderNoMatchingColumns") }}</div>
             <template #header>

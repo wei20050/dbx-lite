@@ -148,6 +148,9 @@ defineExpose({ focusWhere });
 const filterBuilderRef = ref<InstanceType<typeof DataGridFilterBuilder>>();
 const pendingFirstEmptyRuleColumnSearch = ref(false);
 let openingFirstEmptyRuleColumnSearch = false;
+const sortBuilderRef = ref<InstanceType<typeof DataGridSortBuilder>>();
+const pendingSortFirstEmptyRuleColumnSearch = ref(false);
+let openingSortFirstEmptyRuleColumnSearch = false;
 const whereWidth = ref<number | null>(null);
 const resizing = ref(false);
 let resizeStartX = 0;
@@ -248,15 +251,68 @@ function updateQuickFilterBuilderOpen(open: boolean) {
 
 function updateSortBuilderOpen(open: boolean) {
   emit("update:sortBuilderOpen", open);
+  if (!open) {
+    pendingSortFirstEmptyRuleColumnSearch.value = false;
+    return;
+  }
+  if (props.filterEditorView !== "quick") return;
+  const rules = props.sortRules ?? [];
+  pendingSortFirstEmptyRuleColumnSearch.value = !rules.length || rules.every((rule) => !rule.columnName);
+  if (!pendingSortFirstEmptyRuleColumnSearch.value) return;
+  void nextTick().then(openPendingFirstEmptySortColumnSearch);
 }
 
-function handleSortButtonClick() {
+async function openPendingFirstEmptySortColumnSearch() {
+  if (openingSortFirstEmptyRuleColumnSearch || !pendingSortFirstEmptyRuleColumnSearch.value || !props.sortBuilderOpen || !sortBuilderRef.value) return;
+  if (!(props.sortRules ?? []).some((rule) => !rule.columnName && !rule.disabled)) return;
+  openingSortFirstEmptyRuleColumnSearch = true;
+  await nextTick();
+  await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  try {
+    if (!pendingSortFirstEmptyRuleColumnSearch.value || !props.sortBuilderOpen || !sortBuilderRef.value) return;
+    pendingSortFirstEmptyRuleColumnSearch.value = false;
+    await sortBuilderRef.value.openFirstEmptyRuleColumnSearch();
+  } finally {
+    openingSortFirstEmptyRuleColumnSearch = false;
+  }
+}
+
+async function handleSortButtonClick() {
   const nextOpen = !props.sortBuilderOpen;
   if (nextOpen && props.filterBuilderOpen) emit("update:filterBuilderOpen", false);
   emit("update:sortBuilderOpen", nextOpen);
+  if (!nextOpen) {
+    pendingSortFirstEmptyRuleColumnSearch.value = false;
+    return;
+  }
+  if (props.filterEditorView !== "quick") return;
+  const rules = props.sortRules ?? [];
+  const shouldFocusColumnSearch = !rules.length || rules.every((rule) => !rule.columnName);
+  pendingSortFirstEmptyRuleColumnSearch.value = shouldFocusColumnSearch;
+  if (!shouldFocusColumnSearch) return;
+  await nextTick();
+  await openPendingFirstEmptySortColumnSearch();
 }
 
 watch([() => props.filterBuilderOpen, () => props.rules.map((rule) => `${rule.id}:${rule.columnName}:${rule.disabled ? "1" : "0"}`).join("\u0000"), filterBuilderRef], () => void openPendingFirstEmptyRuleColumnSearch(), { flush: "post" });
+watch([() => props.sortBuilderOpen, () => (props.sortRules ?? []).map((rule) => `${rule.id}:${rule.columnName}:${rule.disabled ? "1" : "0"}`).join("\u0000"), sortBuilderRef], () => void openPendingFirstEmptySortColumnSearch(), { flush: "post" });
+
+function pointInsideOpenPopover(point: { x: number; y: number }): boolean {
+  // Modal Select 会禁用 body 指针事件，弹层内部点击的 target 变成 html，只能按坐标判断
+  for (const el of document.querySelectorAll<HTMLElement>("[data-slot='popover-content']")) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom) return true;
+  }
+  return false;
+}
+
+function handleColumnSelectOutside(target: EventTarget | null, point: { x: number; y: number } | null) {
+  const node = target instanceof Node ? target : null;
+  if (node instanceof Element && node.closest("[data-dbx-filter-toggle], [data-dbx-sort-toggle], [data-slot='select-content']")) return;
+  if (point && pointInsideOpenPopover(point)) return;
+  if (props.filterBuilderOpen) emit("update:filterBuilderOpen", false);
+  if (props.sortBuilderOpen) emit("update:sortBuilderOpen", false);
+}
 
 onUnmounted(onResizeEnd);
 </script>
@@ -269,6 +325,7 @@ onUnmounted(onResizeEnd);
           <PopoverTrigger as-child>
             <button
               type="button"
+              data-dbx-filter-toggle
               class="relative flex h-5 w-5 -translate-x-1 shrink-0 items-center justify-center rounded border text-[11px] font-medium transition-colors"
               :class="filterButtonActive ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border/70 text-muted-foreground hover:bg-accent hover:text-foreground'"
               :disabled="!canUseWhereSearch"
@@ -331,6 +388,7 @@ onUnmounted(onResizeEnd);
               :disabled="!canUseWhereSearch"
               :show-header="false"
               :value-suggestions="valueSuggestions"
+              :comment-by-column="commentByColumn"
               @add="emit('addRule')"
               @apply-only="emit('applyOnly', $event)"
               @apply="emit('applyFilters')"
@@ -349,6 +407,7 @@ onUnmounted(onResizeEnd);
               @toggle-all-value-suggestions="emit('toggleAllValueSuggestions')"
               @apply-value-suggestions="emit('applyValueSuggestions')"
               @custom-mode-order="emit('customModeOrder')"
+              @column-select-outside="handleColumnSelectOutside"
             />
           </PopoverContent>
         </Popover>
@@ -400,6 +459,7 @@ onUnmounted(onResizeEnd);
           <PopoverTrigger as-child>
             <button
               type="button"
+              data-dbx-sort-toggle
               class="relative flex h-5 w-5 -translate-x-1 shrink-0 items-center justify-center rounded border text-[11px] font-medium transition-colors"
               :class="sortButtonActive ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15' : 'border-border/70 text-muted-foreground hover:bg-accent hover:text-foreground'"
               :disabled="!canUseWhereSearch"
@@ -411,6 +471,7 @@ onUnmounted(onResizeEnd);
           </PopoverTrigger>
           <PopoverContent data-sort-rules-scroll align="start" :collision-padding="8" class="max-h-[var(--reka-popover-content-available-height)] w-fit max-w-[calc(100vw-16px)] overflow-y-auto overscroll-contain p-2.5">
             <DataGridSortBuilder
+              ref="sortBuilderRef"
               :rules="sortRules ?? []"
               :columns="quickBuilderColumns ?? columns"
               :comment-by-column="commentByColumn"
@@ -424,6 +485,7 @@ onUnmounted(onResizeEnd);
               @reset="emit('resetSortRules')"
               @clear="emit('clearSortRules')"
               @apply="emit('applySortRules')"
+              @column-select-outside="handleColumnSelectOutside"
             />
           </PopoverContent>
         </Popover>

@@ -19,6 +19,7 @@ const props = defineProps<{
   applyOnlyBusy?: boolean;
   disabled?: boolean;
   valueSuggestions?: DataGridDistinctValueSuggestionState;
+  commentByColumn?: ReadonlyMap<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -85,6 +86,7 @@ watch(
         :column-search="columnSearch"
         :disabled="disabled"
         :value-suggestions="valueSuggestions"
+        :comment-by-column="commentByColumn"
         layout="panel"
         :show-header="false"
         :show-footer="false"

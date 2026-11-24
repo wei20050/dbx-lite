@@ -1,5 +1,6 @@
 import type { StarRocksAlterOptions } from "@/lib/table/starrocksAlterOptions";
 import type { AppThemeMode } from "@/lib/app/appTheme";
+import { shortAppVersion } from "@/lib/app/promotedBuild";
 import type { CreateTableDialectOptions } from "@/lib/table/starrocksPhysicalOptions";
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { notifySavedSqlLibraryChanged } from "@/lib/savedSql/savedSqlLibraryEvents";
@@ -407,10 +408,6 @@ export interface DesktopSettings {
   custom_ai_skill_auto_enabled?: boolean | null;
   sidebar_table_page_size?: number | null;
 }
-
-
-
-
 
 export interface SavedSqlSyncEntry {
   folderName?: string;
@@ -935,30 +932,9 @@ export async function saveDesktopSettings(settings: DesktopSettings): Promise<vo
   return invoke("save_desktop_settings", { settings });
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export interface WebCapabilities {
   passwordViewerEnabled: boolean;
 }
-
-
-
-
-
-
-
 
 export async function loadWebCapabilities(): Promise<WebCapabilities> {
   return { passwordViewerEnabled: true };
@@ -987,8 +963,6 @@ export async function loadHistoryRetentionLimit(): Promise<number> {
 export async function saveHistoryRetentionLimit(limit: number): Promise<void> {
   return invoke("save_history_retention_limit", { limit });
 }
-
-
 
 export async function loadMaxRetries(): Promise<number> {
   return invoke("load_max_retries");
@@ -3592,15 +3566,6 @@ export interface UpdateDownloadProgress {
   total: number | null;
 }
 
-
-
-
-
-
-
-
-
-
 export async function checkForUpdates(locale?: string, source?: UpdateDownloadSource, channel: UpdateChannel = "stable"): Promise<UpdateInfo> {
   return invoke("check_for_updates", { locale, source, channel });
 }
@@ -3648,7 +3613,7 @@ export async function relaunchApp(): Promise<void> {
 
 export async function getAppVersion(): Promise<string> {
   const { getVersion } = await import("@tauri-apps/api/app");
-  return getVersion();
+  return shortAppVersion(await getVersion());
 }
 
 export async function getAppSupportInfo(): Promise<AppSupportInfo> {
@@ -5875,7 +5840,6 @@ export async function clearHistory(): Promise<void> {
 export async function clearHistoryBySource(source: string): Promise<void> {
   return invoke("clear_history_by_source", { source });
 }
-
 
 export async function clearRedisHistory(): Promise<void> {
   const entries = await loadRedisHistory(1000, 0);

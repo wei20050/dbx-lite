@@ -42,6 +42,7 @@ const props = withDefaults(
     showFooter?: boolean;
     layout?: "popover" | "panel" | "text";
     valueSuggestions?: DataGridDistinctValueSuggestionState;
+    commentByColumn?: ReadonlyMap<string, string>;
   }>(),
   { showHeader: true, showFooter: true, layout: "popover" },
 );
@@ -64,6 +65,7 @@ const emit = defineEmits<{
   toggleAllValueSuggestions: [];
   applyValueSuggestions: [];
   customModeOrder: [];
+  columnSelectOutside: [target: EventTarget | null, point: { x: number; y: number } | null];
 }>();
 const columnSearchInputs = new Map<string, HTMLInputElement>();
 const filterRuleElements = new Map<string, HTMLElement>();
@@ -94,6 +96,16 @@ let ruleDragPreviousBodyCursor = "";
 
 function columnNameDisplayUnits(value: string) {
   return Array.from(value).reduce((total, character) => total + ((character.codePointAt(0) ?? 0) > 0xff ? 2 : 1), 0);
+}
+
+function columnComment(column: string) {
+  const comments = props.commentByColumn;
+  return (comments?.get(column) ?? comments?.get(column.toLowerCase()))?.trim() || undefined;
+}
+
+function handleColumnPointerDownOutside(event?: CustomEvent<{ originalEvent?: PointerEvent }>) {
+  const native = event?.detail?.originalEvent;
+  emit("columnSelectOutside", native?.target ?? null, native ? { x: native.clientX, y: native.clientY } : null);
 }
 
 const filterBuilderStyle = computed(() => {
@@ -612,7 +624,7 @@ function blurValueRule(id: string) {
               <SelectValue v-if="rule.columnName">{{ rule.columnName }}</SelectValue>
               <SelectValue v-else :placeholder="t('grid.filterBuilderColumn')" />
             </SelectTrigger>
-            <SelectContent position="popper" class="max-h-72" :hide-scroll-buttons="true" @close-auto-focus="(event: Event) => handleColumnCloseAutoFocus(rule.id, event)">
+            <SelectContent position="popper" class="max-h-72" :hide-scroll-buttons="true" @pointer-down-outside="handleColumnPointerDownOutside" @close-auto-focus="(event: Event) => handleColumnCloseAutoFocus(rule.id, event)">
               <SelectItem
                 v-for="(column, columnIndex) in props.filteredColumns"
                 :key="column"
@@ -622,7 +634,10 @@ function blurValueRule(id: string) {
                 :data-filter-active="activeColumnIndex(rule.id) === columnIndex ? '' : undefined"
                 @pointermove="setActiveColumnIndex(rule.id, columnIndex)"
               >
-                {{ column }}
+                <span class="flex w-full min-w-0 items-baseline gap-1.5">
+                  <span class="min-w-0 truncate">{{ column }}</span>
+                  <span v-if="columnComment(column)" class="min-w-0 max-w-[10rem] shrink truncate text-[10px] text-muted-foreground" :title="columnComment(column)">{{ columnComment(column) }}</span>
+                </span>
               </SelectItem>
               <div v-if="!props.filteredColumns.length" class="px-2 py-2 text-xs text-muted-foreground">{{ t("grid.filterBuilderNoMatchingColumns") }}</div>
               <template #header>

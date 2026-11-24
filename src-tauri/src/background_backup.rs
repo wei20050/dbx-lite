@@ -13,13 +13,17 @@ use std::{
 };
 use tokio_util::sync::CancellationToken;
 
+struct WorkerSession {
+    stop: CancellationToken,
+    task: tokio::task::JoinHandle<()>,
+    lease: PathBuf,
+}
+
 pub struct BackgroundBackup {
     pub service: BackupService,
     data_dir: PathBuf,
     app_identifier: String,
-    stop: CancellationToken,
-    worker: tokio::sync::Mutex<Option<tokio::task::JoinHandle<()>>>,
-    lease: PathBuf,
+    worker: tokio::sync::Mutex<Option<WorkerSession>>,
 }
 
 #[derive(Serialize)]
@@ -32,61 +36,116 @@ pub struct BackgroundStatus {
 impl BackgroundBackup {
     pub fn new(state: Arc<AppState>, data_dir: PathBuf, app_identifier: String) -> Result<Self, String> {
         let service = BackupService::new(state, &data_dir, None);
-        let stop = CancellationToken::new();
-        let directory = data_dir.join("database-backups");
-        std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
-        let lease = directory.join(format!("ui-{}.lease", uuid::Uuid::new_v4().simple()));
-        std::fs::write(&lease, b"1").map_err(|e| e.to_string())?;
-        let mut command = Command::new(std::env::current_exe().map_err(|e| e.to_string())?);
-        command
-            .arg("--ui-backup-worker")
-            .arg("--data-dir")
-            .arg(&data_dir)
-            .arg("--ui-lease")
-            .arg(&lease)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x08000200);
+        std::fs::create_dir_all(data_dir.join("database-backups")).map_err(|e| e.to_string())?;
+        clear_stale_leases(&data_dir);
+        // Only keep a worker process around while background backups are enabled;
+        // the toggle starts/stops it on demand.
+        let worker = if marker(&data_dir).exists() { Some(spawn_worker_session(&data_dir)?) } else { None };
+        Ok(Self { service, data_dir, app_identifier, worker: tokio::sync::Mutex::new(worker) })
+    }
+
+    pub async fn ensure_worker(&self) -> Result<(), String> {
+        let mut worker = self.worker.lock().await;
+        if worker.is_none() {
+            *worker = Some(spawn_worker_session(&self.data_dir)?);
         }
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            command.process_group(0);
-        }
-        let mut child = command.spawn().map_err(|e| e.to_string())?;
-        let heartbeat_lease = lease.clone();
-        let heartbeat_stop = stop.clone();
-        let worker = tokio::spawn(async move {
-            loop {
-                tokio::select! { _ = heartbeat_stop.cancelled() => break, _ = tokio::time::sleep(Duration::from_secs(2)) => {} }
-                if let Err(error) = tokio::fs::write(&heartbeat_lease, b"1").await {
-                    log::error!("[database-backup] UI lease failed: {error}");
-                }
-                if child.try_wait().is_ok_and(|exit| exit.is_some()) {
-                    match command.spawn() {
-                        Ok(restarted) => child = restarted,
-                        Err(error) => log::error!("[database-backup] worker restart failed: {error}"),
-                    }
-                }
-            }
-        });
-        Ok(Self { service, data_dir, app_identifier, stop, worker: tokio::sync::Mutex::new(Some(worker)), lease })
+        Ok(())
+    }
+
+    pub async fn stop_worker(&self) {
+        let session = self.worker.lock().await.take();
+        let Some(session) = session else { return };
+        session.stop.cancel();
+        let _ = tokio::time::timeout(Duration::from_secs(10), session.task).await;
+        let _ = std::fs::remove_file(&session.lease);
     }
 
     pub async fn shutdown(&self) {
-        self.stop.cancel();
-        if let Some(worker) = self.worker.lock().await.take() {
-            let _ = tokio::time::timeout(Duration::from_secs(60), worker).await;
-        }
-        let _ = tokio::fs::remove_file(&self.lease).await;
+        self.stop_worker().await;
     }
 
     pub fn resume(&self) -> Result<(), String> {
         resume_registration(&self.data_dir, |data_dir| register(data_dir, &self.app_identifier))
+    }
+}
+
+fn spawn_worker_process(data_dir: &Path, lease: &Path) -> Result<std::process::Child, String> {
+    let mut command = Command::new(std::env::current_exe().map_err(|e| e.to_string())?);
+    command
+        .arg("--ui-backup-worker")
+        .arg("--data-dir")
+        .arg(data_dir)
+        .arg("--ui-lease")
+        .arg(lease)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000200);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    command.spawn().map_err(|e| e.to_string())
+}
+
+fn spawn_worker_session(data_dir: &Path) -> Result<WorkerSession, String> {
+    let lease = data_dir.join("database-backups").join(format!("ui-{}.lease", uuid::Uuid::new_v4().simple()));
+    std::fs::write(&lease, b"1").map_err(|e| e.to_string())?;
+    let mut child = match spawn_worker_process(data_dir, &lease) {
+        Ok(child) => child,
+        Err(error) => {
+            let _ = std::fs::remove_file(&lease);
+            return Err(error);
+        }
+    };
+    let stop = CancellationToken::new();
+    let session_stop = stop.clone();
+    let heartbeat_lease = lease.clone();
+    let heartbeat_dir = data_dir.to_path_buf();
+    let task = tokio::spawn(async move {
+        loop {
+            tokio::select! { _ = session_stop.cancelled() => break, _ = tokio::time::sleep(Duration::from_secs(2)) => {} }
+            if let Err(error) = tokio::fs::write(&heartbeat_lease, b"1").await {
+                log::error!("[database-backup] UI lease failed: {error}");
+            }
+            // A worker exiting while backups are still enabled is unexpected; restart it.
+            if marker(&heartbeat_dir).exists() && child.try_wait().is_ok_and(|exit| exit.is_some()) {
+                match spawn_worker_process(&heartbeat_dir, &heartbeat_lease) {
+                    Ok(restarted) => child = restarted,
+                    Err(error) => log::error!("[database-backup] worker restart failed: {error}"),
+                }
+            }
+        }
+        let _ = std::fs::remove_file(&heartbeat_lease);
+        // Backups turned off: stop the worker now. App exiting while backups stay
+        // enabled: let the orphaned worker drain its queue and exit on its own.
+        if !marker(&heartbeat_dir).exists() {
+            let _ = child.kill();
+        }
+    });
+    Ok(WorkerSession { stop, task, lease })
+}
+
+fn clear_stale_leases(data_dir: &Path) {
+    // Leases are refreshed every 2s; anything older than the worker's 10s liveness
+    // window belongs to a process that was killed without a clean shutdown.
+    let Ok(entries) = std::fs::read_dir(data_dir.join("database-backups")) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if !name.starts_with("ui-") || !name.ends_with(".lease") {
+            continue;
+        }
+        let age = entry.metadata().and_then(|metadata| metadata.modified()).ok().and_then(|time| time.elapsed().ok());
+        if !age.map_or(true, |age| age >= Duration::from_secs(10)) {
+            continue;
+        }
+        let _ = std::fs::remove_file(entry.path());
     }
 }
 
@@ -112,7 +171,7 @@ pub async fn database_backup_background(
 ) -> Result<BackgroundStatus, String> {
     let data_dir = state.data_dir.clone();
     let app_identifier = state.app_identifier.clone();
-    tokio::task::spawn_blocking(move || {
+    let status_enabled = tokio::task::spawn_blocking(move || -> Result<bool, String> {
         if let Some(enabled) = enabled {
             if enabled {
                 std::fs::create_dir_all(data_dir.join("database-backups")).map_err(|e| e.to_string())?;
@@ -130,10 +189,25 @@ pub async fn database_backup_background(
                 unregister(&data_dir)?;
             }
         }
-        Ok(BackgroundStatus { enabled: marker(&data_dir).exists(), platform: std::env::consts::OS })
+        Ok(marker(&data_dir).exists())
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+    match enabled {
+        Some(true) => {
+            if let Err(error) = state.ensure_worker().await {
+                let cleanup_dir = state.data_dir.clone();
+                let _ = tokio::task::spawn_blocking(move || {
+                    let _ = std::fs::remove_file(marker(&cleanup_dir));
+                })
+                .await;
+                return Err(error);
+            }
+        }
+        Some(false) => state.stop_worker().await,
+        None => {}
+    }
+    Ok(BackgroundStatus { enabled: status_enabled, platform: std::env::consts::OS })
 }
 
 fn marker(data_dir: &Path) -> PathBuf {
@@ -351,7 +425,7 @@ enum WorkerAction {
 fn worker_action(managed: bool, ui: bool, ui_alive: bool, enabled: bool) -> WorkerAction {
     if ui && !ui_alive && enabled {
         WorkerAction::Drain
-    } else if (managed || ui) && !enabled && !(ui && ui_alive) {
+    } else if (managed || ui) && !enabled {
         WorkerAction::Stop
     } else {
         WorkerAction::Continue
@@ -483,7 +557,7 @@ mod tests {
 
     #[test]
     fn worker_exit_and_restart_decisions_preserve_foreground_and_managed_jobs() {
-        assert_eq!(worker_action(false, true, true, false), WorkerAction::Continue);
+        assert_eq!(worker_action(false, true, true, false), WorkerAction::Stop);
         assert_eq!(worker_action(false, true, false, false), WorkerAction::Stop);
         assert_eq!(worker_action(false, true, false, true), WorkerAction::Drain);
         assert_eq!(worker_action(false, true, true, true), WorkerAction::Continue);
@@ -528,9 +602,11 @@ mod tests {
             service: BackupService::new(state, directory.path(), None),
             data_dir: directory.path().to_path_buf(),
             app_identifier: "com.dbx.app".to_string(),
-            stop: stop.clone(),
-            worker: tokio::sync::Mutex::new(Some(worker)),
-            lease: lease.clone(),
+            worker: tokio::sync::Mutex::new(Some(WorkerSession {
+                stop: stop.clone(),
+                task: worker,
+                lease: lease.clone(),
+            })),
         };
         tokio::time::timeout(Duration::from_secs(2), backup.shutdown()).await.unwrap();
         backup.shutdown().await;
